@@ -1,16 +1,19 @@
 from typing import Dict, Tuple, List
+import basico.biomodels as biomodels
+from multiprocessing import Pool
+import os.path as opath
 import libsbml
-import argparse
 import os
-
-
-VERBOSE = False
 
 
 class Errors:
     FILE_NOT_EXISTS = 1
     XML_READ_ERROR  = 2
 
+
+###################################################################################################
+################################## MODEL TRANSFORMATION FUNCTIONS #################################
+###################################################################################################
 
 def print_errors(doc: libsbml.SBMLDocument, nerrors: int) -> None:
     """
@@ -51,8 +54,6 @@ def load_sbml(sbmlpath: str) -> libsbml.SBMLDocument:
     if document.getNumErrors() > 0:
         print_errors(document, document.getNumErrors())
 
-    print("--- SBML Loaded without any error")
-
     return document
 
 
@@ -83,7 +84,6 @@ def get_species(model: libsbml.Model) -> Dict[str, Tuple[str, str]]:
     species = dict()
 
     # Obtain the total number of species in the model
-    print("--- Loading all the species of the SBML Model")
     num_species = model.getNumSpecies()
     for i in range(0, num_species):
 
@@ -92,10 +92,6 @@ def get_species(model: libsbml.Model) -> Dict[str, Tuple[str, str]]:
 
         # Get the name and the ID and fill the dictionary
         species[current_specie.getName()] = (current_specie.getId(), current_specie.getCompartment())
-
-    if VERBOSE:
-        print("--- All the species have been loaded correctly")
-        print_species(species)
 
     return species
 
@@ -113,7 +109,6 @@ def add_output_species(model: libsbml.Model, species: Dict[str, Tuple[str]]) -> 
     :param species: the dictionary containing all the species of the model
     :return: a list containing all the new SBML Species created
     """
-    print("--- Adding output species to the SBML model")
     new_species_list = []
     for idx, (specie_name, (specie_id, specie_compartment)) in enumerate(species.items()):
         # Set new name, new id and new compartment for the new specie
@@ -131,9 +126,6 @@ def add_output_species(model: libsbml.Model, species: Dict[str, Tuple[str]]) -> 
         new_specie.setConstant(False)
         new_specie.setBoundaryCondition(True)
 
-        if VERBOSE:
-            print("Created new specie N. %02d) " % (idx + 1), new_specie)
-
         new_species_list.append(new_specie)
 
     return new_species_list
@@ -147,15 +139,11 @@ def add_bparameter(model: libsbml.Model, bvalue: float) -> libsbml.Parameter:
     :param bvalue: the value of the new parameter
     :return: a handle to the newly created parameter
     """
-    print("--- Adding a new parameter 'normalization_bvalue' with value %f" % bvalue)
     bparameter: libsbml.Parameter = model.createParameter()
     bparameter.setName("normalization_bvalue")
     bparameter.setId("bparameter")
     bparameter.setValue(bvalue)
     bparameter.setConstant(True)
-
-    if VERBOSE:
-        print(bparameter)
 
     return bparameter
 
@@ -175,7 +163,6 @@ def add_normalization_function(model: libsbml.Model) -> libsbml.FunctionDefiniti
     :param model: a handle to the SBML model
     :return: the handle to tne newly created function
     """
-    print("--- Adding the normalization function to the Model")
     nfunction: libsbml.FunctionDefinition = model.createFunctionDefinition()
     nfunction.setId("nfunction")
     nfunction.setName("State Normalization Function")
@@ -235,11 +222,6 @@ def add_normalization_function(model: libsbml.Model) -> libsbml.FunctionDefiniti
     # Set the formula for the function
     nfunction.setMath(mathml_astnode)
 
-    if VERBOSE:
-        print(nfunction)
-
-    print(libsbml.formulaToL3String(nfunction.getMath()))
-
     return nfunction
 
 
@@ -261,7 +243,6 @@ def add_rules(model     : libsbml.Model,
     :param nfunction: a handle to the normalization function definition
     :return:
     """
-    print("--- Adding Assignment Rules for each species")
     for idx, (_, (specie_id, _)) in enumerate(species.items()):
         # Obtain the corresponding output specie
         ospecie = ospecies[idx]
@@ -294,7 +275,6 @@ def save_model(model: libsbml.Model, path: str) -> None:
     :param model: a handle to the SBML model
     :param path:  a string representing the output path
     """
-    print(f"--- Saving the new modified model to {path}")
     writer = libsbml.SBMLWriter()
     document = model.getSBMLDocument()
     writer.writeSBMLToFile(document, path)
@@ -337,40 +317,130 @@ def transform(sbmlfile: str, outputfile: str, bvalue: float) -> None:
     save_model(model, outputfile)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--sbml",    help="The path to the SBML file", required=True)
-    parser.add_argument("-v", "--verbose", help="Set the verbosity or not",  action="store_true", default=False)
-    parser.add_argument("-b", "--bvalue",  help="The initial value of the parameter b", default=0.01, type=float)
-    parser.add_argument("-o", "--output",  help="The path to save the modified model")
-    args = parser.parse_args()
+#####################################################################################################
+################################## MODEL TRANSFORMATION DOWNLOADING #################################
+#####################################################################################################
 
-    # Set the verbosity
-    global VERBOSE
-    VERBOSE = args.verbose
 
-    # Obtain the b parameter value
-    bvalue = args.bvalue
-    if not bvalue: bvalue = 0.01
+def download_model(prefix_path: str, model_id: int) -> str:
+    """
+    Download a SBML model given the ID from the BioModels Database
 
-    # Obtain the SBML file (relative or absolute path)
-    sbmlfile = args.sbml
+    :param model_id:    the ID of the model that needs to be downloaded
+    :param prefix_path: the folder where store the new model
+    :return: the path where the model has been stored
+    """
+    modelname = "BIOMD%05d.xml" % model_id
+    sbml_content = biomodels.get_content_for_model(model_id)
+    output_file = opath.join(opath.abspath(prefix_path), modelname)
+    open_mode = "x" if not opath.exists(output_file) else "w"
 
-    # In any case check if the file exists or not
-    sbml_abspath = os.path.abspath(sbmlfile)
-    if not os.path.exists(sbml_abspath):
-        print("ERROR: %s file does not exists" % sbmlfile)
-        exit(Errors.FILE_NOT_EXISTS)
+    with open(output_file, mode=open_mode, encoding="utf-8") as fhandle:
+        fhandle.write(sbml_content)
+    
+    return output_file
 
+
+def transform_model(sbml_path: str, bvalue: float) -> str:
+    """
+    Transform a SBML model using the transform function
+
+    :param sbml_path: the path to the SBML model
+    :param bvalue:    the normalization parameter used for the transformation
+    :return: the path where the transformed model has been saved
+    """
     # Obtain the output path
-    output_path = args.output
-    if not output_path:
-        splitted_path = sbml_abspath.split(".")
-        output_path = splitted_path[0] + "_norm." + splitted_path[1]
-        
-    output_path = os.path.abspath(output_path)
+    path, extension = sbml_path.split(".")
+    output_path = f"{path}_output.{extension}"
 
-    transform(sbml_abspath, output_path, bvalue)
+    # Call the transform function to perform the transformation
+    transform(sbml_path, output_path, bvalue)
+
+    return output_path
+
+
+def convert_one(args: List[any]) -> str:
+    """
+    Convert one model speciefied by the model_id input parameter
+
+    :param args: a List of arguments for the multiprocessing map function
+        This parameter must contains only three elements:
+            - prefix_path: the path where to save the model
+            - model_id:    the ID of the model in the BioModels database
+            - bvalue:      the normalization parameter
+
+    :return: the path where the transformed model has been saved
+    """
+    # Extrapolate arguments
+    prefix_path, model_id, bvalue = args
+
+    # Download the model
+    model_path = download_model(prefix_path, model_id + 1)
+    print(f"({model_id}) [*] Dowloaded file {model_path}")
+
+    # Transform the model
+    trans_model_path = transform_model(model_path, bvalue)
+    print(f"({model_id}) [*] Transformed model file {trans_model_path}")
+
+    return trans_model_path
+
+
+def convert_models(prefix_path: str, bvalue: float, nmodels: int) -> List[str]:
+    """
+    Download and converts a bunch of models
+
+    :param prefix_path: the path where to save the downloaded models
+    :param bvalue:      the normalization parameter used for the transformation
+    :param nmodels:     the number of models to download and convert
+    :return: a list containing all the paths to the transformed models
+    """
+    output_paths = []
+    cpu_count = os.cpu_count()
+    for nmodel in range(0, nmodels, cpu_count):
+        with Pool(cpu_count) as pool:
+            args = list(map(lambda x: (prefix_path, x, bvalue), range(nmodel, nmodel + cpu_count)))
+            trans_model_paths = pool.map(convert_one, args)
+            output_paths += trans_model_paths
+    
+    return output_paths
+
+
+def write_paths(paths: List[str], output_path: str) -> None:
+    """
+    Save the list of paths inside a file: one path per row
+
+    :param paths:       the list with all the paths
+    :param output_path: the file where to store the pats
+    :return:
+    """
+    abs_output_path = opath.abspath(output_path)
+    open_mode = "x" if not opath.exists(abs_output_path) else "w"
+    with open(abs_output_path, mode=open_mode, encoding="utf-8") as fhandle:
+        file_content = "\n".join(paths)
+        fhandle.write(file_content)
+
+
+def remove_original(paths: List[str]) -> None:
+    """
+    Remove the original model files
+
+    :param paths: the list with all the output paths
+    :return:
+    """
+    for path in paths:
+        filename, extension = path.split("_output")
+        original_filepath = f"{filename}{extension}"
+        os.remove(original_filepath)
+
+
+def main() -> None:
+    prefix_path = opath.join(os.getcwd(), "tests")
+    nmodels = 32
+    bvalue = 0.01
+
+    paths = convert_models(prefix_path, bvalue, nmodels)
+    write_paths(paths, opath.join(os.getcwd(), "data/paths.txt"))
+    remove_original(paths)
 
 
 if __name__ == "__main__":
