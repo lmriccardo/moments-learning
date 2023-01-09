@@ -1,2 +1,4 @@
 tests/
 data/
+.gitignore
+avis/__pycache__/
