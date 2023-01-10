@@ -435,7 +435,7 @@ def remove_original(paths: List[str]) -> None:
 
 def main() -> None:
     prefix_path = opath.join(os.getcwd(), "tests")
-    nmodels = 32
+    nmodels = 1
     bvalue = 0.01
 
     paths = convert_models(prefix_path, bvalue, nmodels)
