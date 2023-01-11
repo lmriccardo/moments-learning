@@ -1,7 +1,14 @@
 from typing import List, Optional
+from datetime import datetime
+import os.path as opath
 from basico import *
 import COPASI as co
 import pandas as pd
+
+
+#####################################################################################################
+################################## UTILITY FUNCTION FOR SIMULATION ##################################
+#####################################################################################################
 
 
 def read_paths_file(paths_file: str) -> List[str]:
@@ -140,6 +147,155 @@ def print_parameters(model: co.CModel, foutput: Optional[str]=None) -> None:
 
     # Otherwise write inside the file as CSV content
     df.to_csv(foutput)
+
+
+def handle_run_errors(task_id: str) -> None:
+    """
+    Print error messages from COPASI when the trajectory task failed.
+
+    :param task_id: the ID of the task that call this function
+    :return:
+    """
+    import sys
+    sys.stderr.write(f"[*] <ERROR, Task ID:{task_id}> Running The time-course simulation failed.\n")
+
+    # Check if there are additional messages
+    if COPASI.CCopasiMessage.size() > 0:
+        # Print the message on the standard error in chronological order
+        sys.stderr.write(
+            f"[*] <ERROR, Task ID: {task_id}> " + COPASI.CCopasiMessage.getAllMessageText(True)
+        )
+
+
+#####################################################################################################
+################################## TRAJECTORY TASK CLASS DEFINITION #################################
+#####################################################################################################
+
+
+CURRENT_TASK_ID = 0
+
+
+def generate_taskid(model_name: str) -> str:
+    """
+    Generate a new task ID. The ID is in the following format:
+    <hour><min><sec>-<number>-<filename>, where all the component
+    are in Hexadecimal form. <number> is an integer that is 
+    sequentially incremented each time a new task is generated. 
+
+    :return: the ID
+    """
+    local_time = datetime.now()
+    hour = hex(local_time.hour)[2:]
+    minute = hex(local_time.minute)[2:]
+    seconds = hex(local_time.second)[2:]
+    
+    global CURRENT_TASK_ID
+    CURRENT_TASK_ID += 1
+
+    hex_modelname = "".join(list(map(lambda x: hex(ord(x))[2:], model_name)))
+
+    return f"{hour}{minute}{seconds}-{hex(CURRENT_TASK_ID)[2:]}-{hex_modelname}"
+
+
+class TrajectoryTask:
+    """
+    A class used to represent a COPASI Trajectory Task. Each taks is independent
+    from the others and can be identified by an appropriate Task ID. With this class
+    the user can setup a Trajectory Task, initialize all the parameters like
+    the horizon of the simulation, the initial time step, if automatic step size or not,
+    absolute and relative tolerances and more other options. Finally, once the setup
+    is done, the user can run the simulation and store the result in appropriate folders.
+
+    Attributes
+    ----------
+    datamodel : COPASI.CDataModel
+        a handle to the COPASI data model that contains the actual SBML model
+    id : str
+        the identifier of the task (unique and generated using generate_taskid function)
+    trajectory_task : COPASI.CTrajectoryTask
+        the actual trajectory task returned by the data model
+    log_path : str
+        the path where to store the file containing the log of the simulation
+    output_path : str
+        the path where to store the file containing the results of the simulation
+    filename : str
+        the filename of the model (without the extension)
+
+    Methods
+    -------
+    print_informations()
+        Print all the useful information about the input model
+
+    """
+
+    def __init__(self, datamodel  : COPASI.CDataModel, # A handle to the data model
+                       log_dir    : str,               # The path where to store the log file
+                       output_dir : str,               # The path where to store the output and the dense output
+                       filename   : str                # The model filename (without the extension)
+    ) -> None:
+        """
+        :param datamodel : a handle to the COPASI Data model
+        :param log_dir   : The path where to store the log files
+        :param output_dir: The path where to store the output and the dense output
+        :param filename  : The model filename (without the extension)
+        """
+        self.datamodel       = datamodel
+        self.id              = generate_taskid(filename)
+        self.trajectory_task = self.datamodel.getTask("Time-Course")
+
+        # Check that the returned task is a Trajectory Task
+        assert isinstance(self.trajectory_task, COPASI.CTrajectoryTask), \
+            f"<ERROR, Task ID: {self.id}> Not a trajectory Task"
+        
+        self.log_path = log_dir
+        self.output_path = output_dir
+        self.filename = filename
+
+    def print_informations(self) -> None:
+        """
+        Print all the useful information about the input model
+        into two files `<log_path>\<filename>_species.csv` and
+        `<log_path>\<filename>_parameters.csv`. The stored
+        informations involve all the species of the model and 
+        all its paremeters.
+        """
+        # Create the filename to store the species of the model
+        species_filename = f"{self.filename}_species.csv"
+        species_path = opath.join(self.log_path, species_filename)
+
+        # Create the filename to store the parameters of the model
+        params_filename = f"{self.filename}_parameters.csv"
+        params_path = opath.join(self.log_path, params_filename)
+
+        # Prints these two information into the respective file
+        model_handler = self.datamodel.getModel()
+        print_species(model_handler, species_path)
+        print_parameters(model_handler, params_path)
+
+
+def run_trajectory_task(trajectory_task: COPASI.CTrajectoryTask, task_id: str) -> bool:
+    """
+    Run a Time-Course simulation with COPASI and returns TRUE
+    If no error occurred, otherwise it returns False.
+
+    :param trajectory_task: a handle to the Time-Course Task
+    :return: True if no errors, False otherwise
+    """
+    try:
+        # Run the trajectory task
+        result = trajectory_task.process(True)
+
+        # Check if some error occurred
+        if not result: 
+            handle_run_errors(task_id)
+
+        # If no error occured then just return True
+        return True
+    except Exception:
+        handle_run_errors(task_id)
+
+    finally:
+        return False
 
 
 if __name__ == "__main__":
