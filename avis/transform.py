@@ -7,8 +7,9 @@ import os
 
 
 class Errors:
-    FILE_NOT_EXISTS = 1
-    XML_READ_ERROR  = 2
+    FILE_NOT_EXISTS  = 1
+    XML_READ_ERROR   = 2
+    CONVERSION_ERROR = 3
 
 
 ###################################################################################################
@@ -54,6 +55,26 @@ def load_sbml(sbmlpath: str) -> libsbml.SBMLDocument:
     if document.getNumErrors() > 0:
         print_errors(document, document.getNumErrors())
 
+    return document
+
+
+def sbml_to_raterules(document: libsbml.SBMLDocument) -> libsbml.SBMLDocument:
+    """
+    Convert the SBML model by replacing all the reactions with
+    the corresponding Rate Rules, i.e. ODE. In this way we also
+    have that all the parameters local to reactions, now they
+    become global to all the model. 
+
+    :param document: a handler to the SBML document
+    :return:
+    """
+    conv_properties = libsbml.ConversionProperties()
+    conv_properties.addOption("replaceReactions")
+    conversion_result = document.convert(conv_properties)
+    if conversion_result != libsbml.LIBSBML_OPERATION_SUCCESS:
+        print_errors(document, document.getNumErrors())
+        exit(Errors.CONVERSION_ERROR)
+    
     return document
 
 
@@ -298,6 +319,11 @@ def transform(sbmlfile: str, outputfile: str, bvalue: float) -> None:
     """
     # Obtain the corresponding document
     document = load_sbml(sbmlfile)
+
+    # Convert all reaction to rate rules
+    document = sbml_to_raterules(document)
+
+    # Get the handler to the SBML Model
     model = document.getModel()
 
     # Obtain all the species and add output species to the model
@@ -385,6 +411,36 @@ def convert_one(args: List[any]) -> str:
     return trans_model_path
 
 
+def get_ranges(nmax: int, cpu_count: int) -> List[Tuple[int, int]]:
+    """
+    Given a maximum horizon and the number of cpus return a number
+    of ranges between the max number and the cpu count. The number of 
+    returned ranges is exactly (nmax / cpu_count) if nmax is a
+    multiple of cpu_count, otherwise it is (nmax / cpu_count) + (nmax % cpu_count).
+
+    example:
+        >>> get_ranges(67, 16)
+        [[0, 16], [16, 32], [32, 48], [48, 64], [64, 67]]
+    
+    :param nmax:      the maximum horizon
+    :param cpu_count: the total number of cpus
+    :return: a list containing all the ranges
+    """
+    count = 0
+    ranges = []
+    while count < nmax:
+        if nmax < cpu_count:
+            ranges.append([count, nmax])
+        else:
+            condition = count + cpu_count < nmax
+            operator = cpu_count if condition else nmax % cpu_count
+            ranges.append([count, count + operator])
+
+        count += cpu_count
+
+    return ranges
+
+
 def convert_models(prefix_path: str, bvalue: float, nmodels: int) -> List[str]:
     """
     Download and converts a bunch of models
@@ -396,9 +452,9 @@ def convert_models(prefix_path: str, bvalue: float, nmodels: int) -> List[str]:
     """
     output_paths = []
     cpu_count = os.cpu_count()
-    for nmodel in range(0, nmodels, cpu_count):
+    for (minc, maxc) in get_ranges(nmodels, cpu_count):
         with Pool(cpu_count) as pool:
-            args = list(map(lambda x: (prefix_path, x, bvalue), range(nmodel, nmodel + cpu_count)))
+            args = list(map(lambda x: (prefix_path, x, bvalue), range(minc, maxc)))
             trans_model_paths = pool.map(convert_one, args)
             output_paths += trans_model_paths
     

@@ -51,7 +51,8 @@ def print_species(model: co.CModel, foutput: Optional[str] = None) -> None:
     :param foutput: an optional file where the write the output
     :return:
     """
-    print("\n[*] Model Species Overview\n")
+    if foutput:
+        print("\n[*] Model Species Overview\n")
 
     # Get the total number of species inside the model
     num_species = model.getNumMetabs()
@@ -105,7 +106,8 @@ def print_parameters(model: co.CModel, foutput: Optional[str]=None) -> None:
     :param foutput: an optional file where the write the output
     :return:
     """
-    print("\n[*] Model Parameters Overview\n")
+    if foutput:
+        print("\n[*] Model Parameters Overview\n")
 
     # Get the total number of parameters inside the model
     num_params = model.getNumModelValues()
@@ -142,5 +144,5 @@ def print_parameters(model: co.CModel, foutput: Optional[str]=None) -> None:
 
 if __name__ == "__main__":
     model = load_model("C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_output.xml")
-    print_species(model)
-    print_parameters(model)
+    print_species(model, "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_species.csv")
+    print_parameters(model, "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_parameters.csv")
