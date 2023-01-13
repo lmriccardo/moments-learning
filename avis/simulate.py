@@ -198,7 +198,92 @@ def generate_taskid(model_name: str) -> str:
     return f"{hour}{minute}{seconds}-{hex(CURRENT_TASK_ID)[2:]}-{hex_modelname}"
 
 
-@dataclass
+def create_report(datamodel     : co.CDataModel, 
+                  task_id       : str, 
+                  out_stype     : str, 
+                  fixed_species : bool=False) -> co.CReportDefinition:
+    """
+    Function to create a report definition which will contain all the
+    information (i.e. time step and species values) from a time-course
+    simulation. The report will have N + 1 columns, where N is equal to
+    the number of species and the +1 is given by the "time" column, and
+    a number of row that is equal to the horizon of the simulation times
+    the size of each step (in the case a fixed time step has been chosen).
+
+    :param datamodel: a handle to a COPASI DataModel
+    :param task_id:   the string representing the ID of the task
+    :param out_stype: (possible values are "Concetration" (or "concentration")
+                      and "Amount" (or "amount")) if we want to consider the 
+                      concentration or the amount value for each specie.
+    :param fixed_species: if in the output we want to put also FIXED value species.
+    :return: the report definition
+    """
+    assert out_stype.capitalize() in ["Concentration", "Amount"], \
+        f"<ERROR, Task ID: {task_id}> In Create Report given output Specie Type {out_stype}.\n" + \
+         "\tInstead specify one among: Concentration (or concentration), Amount (or amount)"
+
+    # Obtain an handle to the model
+    model: co.CModel = datamodel.getModel()
+
+    # Create a report with the correct filename and all the species against time
+    reports: co.CReportDefinitionVector = datamodel.getReportDefinitionList()
+
+    # Create a report definition object
+    report: co.CReportDefinition = reports.createReportDefinition(
+        f"Report {task_id}",  "Output for Time-Course Task"
+    )
+
+    # Set the task type for the report definition to timecourse
+    report.setTaskType(co.CTaskEnum.Task_timeCourse)
+
+    # We don't want a table
+    report.setIsTable(False)
+
+    # The entry of the output should be separated by ", "
+    report.setSeparator(co.CCopasiReportSeparator(", "))
+
+    # We need a handle to the header and the body
+    # the header will display the ids of the metabolites
+    # and "time" for the first column. The body will contain
+    # the actual time course data.
+    header: co.ReportItemVector = report.getHeaderAddr()
+    body: co.ReportItemVector = report.getBodyAddr()
+    body.push_back(
+        co.CRegisteredCommonName(
+            co.CCommonName(
+                model.getCN().getString() + ",Reference=Time").getString()
+        ))
+    body.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+    header.push_back(co.CRegisteredCommonName(co.CDataString("time").getCN().getString()))
+    header.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+    num_species = model.getNumMetabs()
+    for nspecie in range(num_species):
+        specie: co.CMetab = model.getMetabolite(nspecie)
+        
+        # In case fixed_species is True we don't want
+        # to consider also FIXED metabolites in the output
+        if fixed_species and specie.getStatus() == co.CModelEntity.Status_FIXED:
+            continue
+
+        # Set if we want concentration or amount
+        body.push_back(
+            co.CRegisteredCommonName(
+                specie.getObject(
+                    co.CCommonName(f"Reference={out_stype.capitalize()}")).getCN().getString()
+            ))
+        
+        # Add the corresponding ID to the header
+        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId()).getCN().getString()))
+
+        # After each entry we need a separator
+        if nspecie != num_species - 1:
+            body.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+            header.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+    
+    return report
+
+
+@dataclass(frozen=True)
 class TaskConfiguration:
     """
     This Python dataclass is used the represent a COPASI trajectory task configuration.
@@ -226,15 +311,21 @@ class TaskConfiguration:
         the absolute tolerance
     rel_tolerance : float
         the relative tolerance
+    report_out_stype : str
+        The output type of the species in the report (concentration or amount)
+    report_fixed_species : bool
+        If consider in the report also FIXED value species
     """
-    step_size           : Optional[float]  # The step size of the simulation
-    initial_time        : float            # The initial time of the simulation
-    sim_horizon         : float            # The horizon of the simulation
-    gen_time_series     : bool             # Tell the problem to generate the time series
-    automatic_step_size : bool             # Use automatic step size or not
-    output_event        : bool             # Tell COPASI if we want additional points for event assignment
-    abs_tolerance       : float            # Absolute tolerance parameter
-    rel_tolerance       : float            # Relative tolerance parameter
+    step_size            : Optional[float]  # The step size of the simulation
+    initial_time         : float            # The initial time of the simulation
+    sim_horizon          : float            # The horizon of the simulation
+    gen_time_series      : bool             # Tell the problem to generate the time series
+    automatic_step_size  : bool             # Use automatic step size or not
+    output_event         : bool             # Tell COPASI if we want additional points for event assignment
+    abs_tolerance        : float            # Absolute tolerance parameter
+    rel_tolerance        : float            # Relative tolerance parameter
+    report_out_stype     : str              # The output type of the species in the report (concentration or amount)
+    report_fixed_species : bool             # If consider in the report also FIXED value species
 
 
 class TrajectoryTask:
@@ -263,9 +354,17 @@ class TrajectoryTask:
 
     Methods
     -------
-    print_informations()
+    print_informations(self) -> None
         Print all the useful information about the input model
 
+    setup_task(self, conf: TaskConfiguration) -> None
+        Setup different options for the trajectory task.
+    
+    run_task(self) -> bool
+        Run the trajectory task and return True if Ok, False otherwise
+
+    print_result(self) -> None
+        Print the result of the simulation to the output file
     """
 
     def __init__(self, datamodel  : COPASI.CDataModel, # A handle to the data model
@@ -340,8 +439,11 @@ class TrajectoryTask:
         # The task will run when the module will be saved
         self.trajectory_task.setScheduled(True)
 
-        # Create the report
-        ...
+        # Create the report and set report options
+        report = create_report(self.datamodel, self.id, conf.report_out_stype, conf.report_fixed_species)
+        self.trajectory_task.getReport().setReportDefinition(report)
+        self.trajectory_task.getReport().setTarget(opath.join(self.output_path, f"{self.id}_report.txt"))
+        self.trajectory_task.getReport().setAppend(False)
 
         # Get the problem for the task to set some parameters
         problem: co.CTrajectoryProblem = self.trajectory_task.getProblem()
@@ -361,35 +463,88 @@ class TrajectoryTask:
         # Set the initial time of the simulation
         self.datamodel.getModel().setInitialTime(conf.initial_time)
 
+    def run_task(self) -> bool:
+        """
+        Run a Time-Course simulation with COPASI and returns TRUE
+        If no error occurred, otherwise it returns False.
 
-def run_trajectory_task(trajectory_task: COPASI.CTrajectoryTask, task_id: str) -> bool:
-    """
-    Run a Time-Course simulation with COPASI and returns TRUE
-    If no error occurred, otherwise it returns False.
+        :param trajectory_task: a handle to the Time-Course Task
+        :return: True if no errors, False otherwise
+        """
+        try:
+            # Run the trajectory task
+            result = self.trajectory_task.process(True)
 
-    :param trajectory_task: a handle to the Time-Course Task
-    :return: True if no errors, False otherwise
-    """
-    try:
-        # Run the trajectory task
-        result = trajectory_task.process(True)
+            # Check if some error occurred
+            if not result: 
+                handle_run_errors(self.id)
 
-        # Check if some error occurred
-        if not result: 
-            handle_run_errors(task_id)
+            # If no error occured then just return True
+            return True
+        except Exception:
+            handle_run_errors(self.id)
 
-        # If no error occured then just return True
-        return True
-    except Exception:
-        handle_run_errors(task_id)
+        finally:
+            return False
 
-    finally:
-        return False
+    def print_results(self) -> None:
+        """
+        This method prints the final result of the simulation to
+        the output file. The output file is identified by the task ID
+        with an _res suffix. The file will be stored in the output
+        folder given as input to the constructor of the class. In the
+        result file will be visible: the total number of steps of the
+        simulation, the total number of variables for each step and
+        the final state, i.e., the final values for each species.
+        """
+        # Get the time series object
+        time_series = self.trajectory_task.getTimeSeries()
+
+        # Craft the output file in the output folder
+        output_file = opath.join(self.output_path, f"{self.id}_res.txt")
+        open_mode = "x" if not opath.exists(output_file) else "w"
+
+        # Open the file and write the final content
+        with open(output_file, mode=open_mode, encoding="utf-8") as hfile:
+            hfile.write("N. Steps Time Series: {0} steps\n".format(time_series.getRecordedSteps()))
+            hfile.write("N. Variable Each Step: {0} vars\n".format(time_series.getNumVariables()))
+            hfile.write("\nThe Final State is:\n")
+
+            # Get the number of variables and iterates
+            num_vars = time_series.getNumVariables()
+            last_index = time_series.getRecordedSteps() - 1
+            for nvar in range(0, num_vars):
+                # Here we get the particle numbers (at least for species)
+                hfile.write("    {0}: {1}\n".format(time_series.getTitle(nvar), time_series.getData(last_index, nvar)))
+        
+        return
+
+    def run(self, conf: TaskConfiguration) -> None:
+        """
+        Run the trajectory task
+
+        :param conf: the Trajectory Task Configuration
+        :return:
+        """
+        # 1. Print the basic information
+        self.print_informations()
+
+        # 2. Setup the trajectory task
+        self.setup_task(conf)
+
+        # 3. Simulate
+        result = self.run_task()
+
+        assert result, \
+            f"<ERROR, Task ID: {self.id}> Simulation Failed"
+        
+        # 4. Print the final results
+        self.print_results()
 
 
 if __name__ == "__main__":
     import sys
-    if sys.platform == "nt":
+    if sys.platform == "win32":
         model_path = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_output.xml"
         log_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\log\\"
         output_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\runs\\"
@@ -398,7 +553,11 @@ if __name__ == "__main__":
         log_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/log/"
         output_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/runs/"
 
+    task_conf = TaskConfiguration(
+        step_size=0.01,
+        
+    )
+
     model = load_model(model_path)
     datamodel = model.getObjectDataModel()
     ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
-    ttask.print_informations()
