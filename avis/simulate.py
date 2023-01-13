@@ -43,9 +43,6 @@ def load_model(path_to_model: str) -> co.CModel:
         print(f"Error: import SBML {path_to_model} failed")
         exit(1)
 
-    # Print model overview
-    print_model(data_model)
-
     model: co.CModel = data_model.getModel()
     return model
 
@@ -390,6 +387,9 @@ class TrajectoryTask:
         self.output_path = output_dir
         self.filename = filename
 
+        self.output_file = opath.join(self.output_path, f"{self.id}_report.txt")
+        self.res_file = opath.join(self.output_path, f"{self.id}_res.txt")
+
         self._create_directories() # Create the log and output folder if don't exist
 
     def _create_directories(self) -> None:
@@ -442,7 +442,7 @@ class TrajectoryTask:
         # Create the report and set report options
         report = create_report(self.datamodel, self.id, conf.report_out_stype, conf.report_fixed_species)
         self.trajectory_task.getReport().setReportDefinition(report)
-        self.trajectory_task.getReport().setTarget(opath.join(self.output_path, f"{self.id}_report.txt"))
+        self.trajectory_task.getReport().setTarget(self.output_file)
         self.trajectory_task.getReport().setAppend(False)
 
         # Get the problem for the task to set some parameters
@@ -457,8 +457,8 @@ class TrajectoryTask:
         method = self.trajectory_task.getMethod()
         abs_param = method.getParameter("Absolute Tolerance")
         rel_param = method.getParameter("Relative Tolerance")
-        abs_param.setValue(1.0e-09)
-        rel_param.setValue(1.0e-09)
+        abs_param.setValue(conf.abs_tolerance)
+        rel_param.setValue(conf.rel_tolerance)
 
         # Set the initial time of the simulation
         self.datamodel.getModel().setInitialTime(conf.initial_time)
@@ -476,15 +476,14 @@ class TrajectoryTask:
             result = self.trajectory_task.process(True)
 
             # Check if some error occurred
-            if not result: 
+            if not result:
                 handle_run_errors(self.id)
+                return False
 
             # If no error occured then just return True
             return True
         except Exception:
             handle_run_errors(self.id)
-
-        finally:
             return False
 
     def print_results(self) -> None:
@@ -501,11 +500,10 @@ class TrajectoryTask:
         time_series = self.trajectory_task.getTimeSeries()
 
         # Craft the output file in the output folder
-        output_file = opath.join(self.output_path, f"{self.id}_res.txt")
-        open_mode = "x" if not opath.exists(output_file) else "w"
+        open_mode = "x" if not opath.exists(self.res_file) else "w"
 
         # Open the file and write the final content
-        with open(output_file, mode=open_mode, encoding="utf-8") as hfile:
+        with open(self.res_file, mode=open_mode, encoding="utf-8") as hfile:
             hfile.write("N. Steps Time Series: {0} steps\n".format(time_series.getRecordedSteps()))
             hfile.write("N. Variable Each Step: {0} vars\n".format(time_series.getNumVariables()))
             hfile.write("\nThe Final State is:\n")
@@ -533,6 +531,7 @@ class TrajectoryTask:
         self.setup_task(conf)
 
         # 3. Simulate
+        print(f"[*] Running Task ID: {self.id}")
         result = self.run_task()
 
         assert result, \
@@ -554,10 +553,19 @@ if __name__ == "__main__":
         output_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/runs/"
 
     task_conf = TaskConfiguration(
-        step_size=0.01,
-        
+        step_size            = 0.01,
+        initial_time         = 0.0,
+        sim_horizon          = 100.0,
+        gen_time_series      = True,
+        automatic_step_size  = False,
+        output_event         = False,
+        abs_tolerance        = 1.0e-09,
+        rel_tolerance        = 1.0e-09,
+        report_out_stype     = "Concentration",
+        report_fixed_species = True
     )
 
     model = load_model(model_path)
     datamodel = model.getObjectDataModel()
     ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
+    ttask.run(task_conf)
