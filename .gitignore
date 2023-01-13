@@ -1,3 +1,6 @@
 tests/
 data/
+venv/
+log/
+runs/
 avis/__pycache__/

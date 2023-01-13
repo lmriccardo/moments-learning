@@ -1,4 +1,5 @@
 from typing import List, Optional
+from dataclasses import dataclass
 from datetime import datetime
 import os.path as opath
 from basico import *
@@ -58,7 +59,7 @@ def print_species(model: co.CModel, foutput: Optional[str] = None) -> None:
     :param foutput: an optional file where the write the output
     :return:
     """
-    if foutput:
+    if not foutput:
         print("\n[*] Model Species Overview\n")
 
     # Get the total number of species inside the model
@@ -113,7 +114,7 @@ def print_parameters(model: co.CModel, foutput: Optional[str]=None) -> None:
     :param foutput: an optional file where the write the output
     :return:
     """
-    if foutput:
+    if not foutput:
         print("\n[*] Model Parameters Overview\n")
 
     # Get the total number of parameters inside the model
@@ -184,7 +185,7 @@ def generate_taskid(model_name: str) -> str:
 
     :return: the ID
     """
-    local_time = datetime.now()
+    local_time = datetime.datetime.now()
     hour = hex(local_time.hour)[2:]
     minute = hex(local_time.minute)[2:]
     seconds = hex(local_time.second)[2:]
@@ -195,6 +196,45 @@ def generate_taskid(model_name: str) -> str:
     hex_modelname = "".join(list(map(lambda x: hex(ord(x))[2:], model_name)))
 
     return f"{hour}{minute}{seconds}-{hex(CURRENT_TASK_ID)[2:]}-{hex_modelname}"
+
+
+@dataclass
+class TaskConfiguration:
+    """
+    This Python dataclass is used the represent a COPASI trajectory task configuration.
+    A Trajectory task configuration is used to set the value for the simulation
+    step number, the simulation initial time, the horizon, absolute and relative tolerances ...
+    This class is given as input to the `obj:TrajectoryTask.setup_task` function.
+
+    Attributes
+    ----------
+    step_size : float or None
+        the step size of the simulation
+    initial_time : float
+        The initial time of the simulation
+    sim_horizon : float
+        The horizon of the simulation
+    get_time_series : bool
+        Tell the task (or problem) to generate the time series
+    automatic_step_size : bool
+        Tell the task to use automatic step size or not. This should be
+        set to False whenever we set `step_size` to None. Otherwise, 
+        we can safely set True.
+    output_event : bool
+        Tell COPASI if we want additional points for event assignments
+    abs_tolerance : float
+        the absolute tolerance
+    rel_tolerance : float
+        the relative tolerance
+    """
+    step_size           : Optional[float]  # The step size of the simulation
+    initial_time        : float            # The initial time of the simulation
+    sim_horizon         : float            # The horizon of the simulation
+    gen_time_series     : bool             # Tell the problem to generate the time series
+    automatic_step_size : bool             # Use automatic step size or not
+    output_event        : bool             # Tell COPASI if we want additional points for event assignment
+    abs_tolerance       : float            # Absolute tolerance parameter
+    rel_tolerance       : float            # Relative tolerance parameter
 
 
 class TrajectoryTask:
@@ -251,6 +291,21 @@ class TrajectoryTask:
         self.output_path = output_dir
         self.filename = filename
 
+        self._create_directories() # Create the log and output folder if don't exist
+
+    def _create_directories(self) -> None:
+        """ Create input directories if they do not exists """
+        # Log folder checking
+        try:
+            os.mkdir(self.log_path)
+        except FileExistsError:
+            pass
+        
+        try:
+            os.mkdir(self.output_path)
+        except FileExistsError:
+            pass
+
     def print_informations(self) -> None:
         """
         Print all the useful information about the input model
@@ -271,6 +326,40 @@ class TrajectoryTask:
         model_handler = self.datamodel.getModel()
         print_species(model_handler, species_path)
         print_parameters(model_handler, params_path)
+
+    def setup_task(self, conf: TaskConfiguration) -> None:
+        """
+        Setup different options for the trajectory task.
+
+        :param conf: the configuration to be applied
+        :return:
+        """
+        # Run a deterministic time course
+        self.trajectory_task.setMethodType(co.CTaskEnum.Method_deterministic)
+
+        # The task will run when the module will be saved
+        self.trajectory_task.setScheduled(True)
+
+        # Create the report
+        ...
+
+        # Get the problem for the task to set some parameters
+        problem: co.CTrajectoryProblem = self.trajectory_task.getProblem()
+        problem.setStepSize(conf.step_size)    # Set the step size
+        problem.setDuration(conf.sim_horizon)  # Set the horizon of the simulation
+        problem.setTimeSeriesRequested(True)   # Request all the time series
+        problem.setAutomaticStepSize(conf.automatic_step_size)  # Set automatic step size
+        problem.setOutputEvent(False)  # we don't want more output points for event assignments
+
+        # set some parameters for the LSODA method through the method
+        method = self.trajectory_task.getMethod()
+        abs_param = method.getParameter("Absolute Tolerance")
+        rel_param = method.getParameter("Relative Tolerance")
+        abs_param.setValue(1.0e-09)
+        rel_param.setValue(1.0e-09)
+
+        # Set the initial time of the simulation
+        self.datamodel.getModel().setInitialTime(conf.initial_time)
 
 
 def run_trajectory_task(trajectory_task: COPASI.CTrajectoryTask, task_id: str) -> bool:
@@ -299,6 +388,17 @@ def run_trajectory_task(trajectory_task: COPASI.CTrajectoryTask, task_id: str) -
 
 
 if __name__ == "__main__":
-    model = load_model("C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_output.xml")
-    print_species(model, "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_species.csv")
-    print_parameters(model, "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_parameters.csv")
+    import sys
+    if sys.platform == "nt":
+        model_path = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_output.xml"
+        log_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\log\\"
+        output_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\runs\\"
+    else:
+        model_path = "/Users/yorunoomo/Desktop/Projects/moments-learning/tests/BIOMD00001_output.xml"
+        log_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/log/"
+        output_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/runs/"
+
+    model = load_model(model_path)
+    datamodel = model.getObjectDataModel()
+    ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
+    ttask.print_informations()
