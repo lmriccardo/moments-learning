@@ -1,5 +1,6 @@
 from typing import List, Optional
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
 from datetime import datetime
 import os.path as opath
 from basico import *
@@ -541,6 +542,104 @@ class TrajectoryTask:
         self.print_results()
 
 
+#####################################################################################################
+################################## POST-SIMULATION FUNCTIONS ########################################
+#####################################################################################################
+
+
+def load_report(report: str) -> pd.DataFrame:
+    """
+    Load the report file into a pandas DataFrame
+
+    :param report: the path to the report file
+    :return: a pandas DataFrame with the report
+    """
+    return pd.read_csv(report)
+
+
+def plot(points: pd.DataFrame, vars: List[str]) -> None:
+    """
+    Plot one or more variables given a matrix of points
+
+    :param points: a pandas DataFrame with the points
+    :param vars: a list of variable names
+    :return:
+    """
+    time_values = points["time"].values      # Take all times values
+    vars_values = points.loc[:, vars].values # Take all variables values
+    
+    # Set some basic configuration for the plot
+    plt.figure(figsize=[15.0, 8.0])
+    plt.xlabel("Time")
+    plt.ylabel("Species")
+
+    # Iterate all the variables and plot
+    for idx, var in enumerate(vars):
+        plt.plot(time_values, vars_values[:, idx], label=var)
+
+    plt.legend(loc="upper right")
+    plt.show()
+
+
+def get_mean_std(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
+    """
+    Return a pandas dataFrame with only the mean and the standard
+    deviation for all the variables specified in the input list.
+
+    :param points: a pandas DataFrame with the points
+    :param vars: a list of variable's name
+    :return: a DataFrame with mean and std for all variables
+    """
+    description = points.describe()
+    return description.loc[["mean", "std"], vars]
+
+
+def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -> pd.DataFrame:
+    """
+    Normalize each point (pointed by vars) in the input dataframe
+    with the usual formula: z = (x - mean) / std. Then return
+    the newly created and normalized dataframe. The applied 
+    normalization depends on the input type: "statistical" means
+    the one with mean and std. deviation; "classical" means between
+    0 and 1, i.e., take the min value away and divide by the
+    difference between the max and the min. 
+
+    :param points: a pandas DataFrame with the points
+    :param vars: a list of variable's name
+    :param ntype: (optional) normalization type "statistical" or "classical"
+    :return: the normalized dataframe
+    """
+    # First obtain the mean and the std deviation for each input variable
+    description = points.describe()
+    description = description.loc[:, vars]
+
+    # Initialize the data for the new frame with the time column
+    data = {"time" : points["time"].values.tolist()}
+
+    # Iterate for each input variable and normalize them
+    for var in vars:
+        var_values = points.loc[:, var].values
+        if ntype == "statistical":
+            # Get the mean and the std for that variable
+            mean = description.loc[["mean"], [var]].values.item()
+            std  = description.loc[["std"],  [var]].values.item()
+
+            # Normalize the variable values
+            var_values = (var_values - mean) / std
+        else:
+            # Get the mininum and the maximum value
+            min_value = description.loc[["min"], [var]].values.item()
+            max_value = description.loc[["max"], [var]].values.item()
+
+            # Normalize the variable values
+            var_values = (var_values - min_value) / (max_value - min_value)
+
+        data[var] = var_values.tolist()
+
+    norm_df = pd.DataFrame(data, columns=["time"] + vars)
+    return norm_df
+
+
 if __name__ == "__main__":
     import sys
     if sys.platform == "win32":
@@ -567,5 +666,20 @@ if __name__ == "__main__":
 
     model = load_model(model_path)
     datamodel = model.getObjectDataModel()
-    ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
-    ttask.run(task_conf)
+    # ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
+    # ttask.run(task_conf)
+
+    dense_output = load_report(opath.join(output_dir, "163b5-1-42494f4d443030303031_report.txt"))
+    variables = [x for x in dense_output.columns if not x.endswith("_output") and x != "time"]
+    print(get_mean_std(dense_output, variables))
+
+    stat_norm = normalize(dense_output, variables)
+    clas_norm = normalize(dense_output, variables, ntype="classical")
+
+    print(stat_norm)
+    print(clas_norm)
+
+    print(get_mean_std(clas_norm, variables))
+
+    # variables = [x for x in dense_output.columns if not x.endswith("_output") and x != "time"]
+    # plot(dense_output, variables)
