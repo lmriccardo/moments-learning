@@ -666,19 +666,23 @@ if __name__ == "__main__":
 
     model = load_model(model_path)
     datamodel = model.getObjectDataModel()
-    # ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
-    # ttask.run(task_conf)
+    ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
+    ttask.run(task_conf)
 
-    dense_output = load_report(opath.join(output_dir, "163b5-1-42494f4d443030303031_report.txt"))
-    variables = [x for x in dense_output.columns if not x.endswith("_output") and x != "time"]
+    dense_output = load_report(ttask.output_file)
+    variables = [x for x in dense_output.columns if x != "time"]
     print(get_mean_std(dense_output, variables))
 
     stat_norm = normalize(dense_output, variables)
     clas_norm = normalize(dense_output, variables, ntype="classical")
 
+    print("\n\n----- NORMALIZATION WITH STATISTICHAL NORM -----")
     print(stat_norm)
+
+    print("\n\n----- NORMALIZATION WITH CLASSICAL NORM -----")
     print(clas_norm)
 
+    print("\n\n----- MEAN AND STANDARD DEVIATION FOR CLASSICAL NORM -----")
     print(get_mean_std(clas_norm, variables))
 
     # variables = [x for x in dense_output.columns if not x.endswith("_output") and x != "time"]
