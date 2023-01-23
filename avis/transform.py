@@ -1,7 +1,8 @@
+from typing import Tuple, List, Generator, Union
 import basico.biomodels as biomodels
 from multiprocessing import Pool
-from typing import Tuple, List
 import os.path as opath
+import numpy as np
 import libsbml
 import math
 import os
@@ -260,7 +261,7 @@ def remove_original(paths: List[str]) -> None:
 ################################## MODEL FUNCTIONS FOR SIMULATIONS ################################
 ###################################################################################################
 
-def to_unit(params: List[float]) -> List[float]:
+def to_integral(params: List[float]) -> List[float]:
     """
     Given a list of parameters convert each parameter from the 
     original value to a value between 1 and 9. That is, given
@@ -274,11 +275,69 @@ def to_unit(params: List[float]) -> List[float]:
     return new_params
 
 
-def get_list_possible_params(params: List[float]) -> List[List[float]]:
+def to_string(vector: Union[np.ndarray, List[float]]) -> str:
     """
-    :param params: the list with all the parameters value
-    :return: 
+    Convert a Numpy vector to a string.
+
+    :param vector: the input vector
+    :return: the string representation
     """
+    if isinstance(vector, np.ndarray):
+        vector = vector.tolist()
+
+    return " ".join(list(map(str, vector)))
+
+
+def get_parameter_combinations(params: List[float], n_sample: int=-1) -> Generator[List[float], None, None]:
+    """
+    Generate each time a combination of all the parameters (in order)
+    such that each parameter is transformed like p_value * 10 ** (-x)
+    where x is a value between 1 and 10. Moreover before generating
+    all the combinations, all the parameters are scaled as values
+    betwee 0 and 1 using `to_integral` function.
+
+    It is possible to decide how many sample we would like the
+    function to generate. The default value is -1, and in this case
+    the number of generated samples is exactly p_len ** 10 // 2. 
+
+    :param params:   The input vectors with all the parameters of the model
+    :param n_sample: The number of samples that we want to generate
+    :return: A generator that generate each time a sample
+    """
+    # Initialize the matrix with all the parameters already modified
+    params = to_integral(params)
+    np_param_matrix = np.array([params] * 10).T
+    modifiers = np.array([[1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]])
+    path_matrix = np_param_matrix * modifiers
+
+    # Initialize variables for the generation
+    taken_combinations = dict()
+    max_row_count = path_matrix.shape[0]
+    current_sample_number = 0
+
+    # Take the maximum number of possible combinations
+    # that is exactly the number of columns power the
+    # lenght of the combination. In practice we take the
+    # 50% of the sample, otherwise there will be high
+    if n_sample == -1:
+        n_sample = path_matrix.shape[1] ** path_matrix.shape[0]
+        n_sample = n_sample // 2
+
+    while current_sample_number < n_sample:
+
+        current_combination = []
+        for current_row_index in range(0, max_row_count):
+            current_row = path_matrix[current_row_index, :]
+            chosen_value = np.random.choice(current_row)
+            current_combination.append(chosen_value.item())
+        
+        current_combination_str = to_string(current_combination)
+        if not current_combination_str in taken_combinations:
+            taken_combinations[current_combination_str] = True
+            current_sample_number += 1
+            yield current_combination
+    
+    return
 
 
 def main() -> None:

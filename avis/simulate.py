@@ -1,4 +1,6 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple, Dict, Generator
+from avis.transform import get_parameter_combinations
+from typing import List, Optional, Tuple, Dict, Generator
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -6,6 +8,7 @@ import os.path as opath
 from basico import *
 import COPASI as co
 import pandas as pd
+import time
 
 
 #####################################################################################################
@@ -171,29 +174,27 @@ def handle_run_errors(task_id: str) -> None:
 #####################################################################################################
 
 
-CURRENT_TASK_ID = 0
-
-
-def generate_taskid(model_name: str) -> str:
+def generate_taskid(model_name: str, count: int) -> str:
     """
     Generate a new task ID. The ID is in the following format:
     <hour><min><sec>-<number>-<filename>, where all the component
     are in Hexadecimal form. <number> is an integer that is 
     sequentially incremented each time a new task is generated. 
 
+    :param model_name: the name of the model
+    :param count: just an integer
     :return: the ID
     """
     local_time = datetime.datetime.now()
     hour = hex(local_time.hour)[2:]
     minute = hex(local_time.minute)[2:]
     seconds = hex(local_time.second)[2:]
-    
-    global CURRENT_TASK_ID
-    CURRENT_TASK_ID += 1
+
+    count += 1
 
     hex_modelname = "".join(list(map(lambda x: hex(ord(x))[2:], model_name)))
 
-    return f"{hour}{minute}{seconds}-{hex(CURRENT_TASK_ID)[2:]}-{hex_modelname}"
+    return f"{hour}{minute}{seconds}-{hex(count)[2:]}-{hex_modelname}"
 
 
 def create_report(datamodel     : co.CDataModel, 
@@ -347,11 +348,18 @@ class TrajectoryTask:
         the path where to store the file containing the log of the simulation
     output_path : str
         the path where to store the file containing the results of the simulation
+    output_file : str
+        the file path where to store the final resulsts of the simulation
+    res_file : str
+        the file path where to store all the dense output for the simulation
     filename : str
         the filename of the model (without the extension)
 
     Methods
     -------
+    get_model(self) -> co.CModel:
+        Return the model handler of the current datamodel
+    
     print_informations(self) -> None
         Print all the useful information about the input model
 
@@ -368,7 +376,9 @@ class TrajectoryTask:
     def __init__(self, datamodel  : COPASI.CDataModel, # A handle to the data model
                        log_dir    : str,               # The path where to store the log file
                        output_dir : str,               # The path where to store the output and the dense output
-                       filename   : str                # The model filename (without the extension)
+                       filename   : str,               # The model filename (without the extension)
+                       job        : int,               # The Job Number
+                       nsim       : int                # The total number of different simulations to run
     ) -> None:
         """
         :param datamodel : a handle to the COPASI Data model
@@ -377,19 +387,31 @@ class TrajectoryTask:
         :param filename  : The model filename (without the extension)
         """
         self.datamodel       = datamodel
-        self.id              = generate_taskid(filename)
-        self.trajectory_task = self.datamodel.getTask("Time-Course")
-
-        # Check that the returned task is a Trajectory Task
-        assert isinstance(self.trajectory_task, COPASI.CTrajectoryTask), \
-            f"<ERROR, Task ID: {self.id}> Not a trajectory Task"
+        self.count           = 0
+        self.id              = generate_taskid(filename, count=self.count)
+        self.trajectory_task = None
         
         self.log_path = log_dir
         self.output_path = output_dir
         self.filename = filename
+        self.job = job
+        self.num_simulations = nsim
 
+        self.output_file = None
+        self.res_file = None
+
+        self.output_files = []
+        self.res_files = []
+
+        self._initialize_files()
+
+    def _initialize_files(self):
+        """ Initialize all the filenames required for the output """
         self.output_file = opath.join(self.output_path, f"{self.id}_report.txt")
         self.res_file = opath.join(self.output_path, f"{self.id}_res.txt")
+
+        self.output_files.append(self.output_file)
+        self.res_files.append(self.res_file)
 
         self._create_directories() # Create the log and output folder if don't exist
 
@@ -405,6 +427,54 @@ class TrajectoryTask:
             os.mkdir(self.output_path)
         except FileExistsError:
             pass
+
+    def _get_parameters(self) -> Dict[str, float]:
+        """ Obtain the parameters of the model from the CSV file """
+        # Obtain the parameters from the CSV
+        params_filename = f"{self.filename}_parameters.csv"
+        params_path = opath.join(self.log_path, params_filename)
+        parameters_df = pd.read_csv(params_path)
+
+        # Obtain a dictionary with keys names and values parameter values
+        parameters_dictionary = dict()
+        parameters_df_dict = parameters_df.to_dict()
+        for idx, p_name in parameters_df_dict["Parameter"].items():
+            parameters_dictionary[p_name] = parameters_df_dict["Value"][idx]
+        
+        return parameters_dictionary
+
+    def _generate_new_parameters(self) -> Generator[Dict[str, float], None, None]:
+        """ Generate new parameters values for the model """
+        # First we need to get all the parameters value
+        parameter_dictionary = self._get_parameters()
+
+        # Extract from the dictionary the actual values in a list
+        parameter_values_list = list(parameter_dictionary.values())
+
+        # Extract also the parameter names in a list
+        parameter_names_list = list(parameter_dictionary.keys())
+        
+        # Start with the generation
+        for params_list in get_parameter_combinations(parameter_values_list, n_sample=self.num_simulations):
+            yield dict(zip(parameter_names_list, params_list))
+    
+    def _change_parameter_values(self, param_dict: Dict[str, float]) -> None:
+        """ Change the parameters of the model with the new values """
+        # First take the model handler
+        hmodel: co.CModel = self.datamodel.getModel()
+
+        # Then iterate every parameter and set a new value
+        number_of_parameters = hmodel.getNumModelValues()
+        for nparam in range(number_of_parameters):
+            current_parameter: co.CModelValue = hmodel.getModelValue(nparam)
+            new_parameter_value = param_dict[current_parameter.getObjectName()]
+            current_parameter.setInitialValue(new_parameter_value)
+            
+        self.datamodel = hmodel.getObjectDataModel()
+
+    def get_model(self) -> co.CModel:
+        """ Return the model handler of the current datamodel """
+        return self.datamodel.getModel()
 
     def print_informations(self) -> None:
         """
@@ -434,6 +504,12 @@ class TrajectoryTask:
         :param conf: the configuration to be applied
         :return:
         """
+        self.trajectory_task = self.datamodel.getTask("Time-Course")
+
+        # Check that the returned task is a Trajectory Task
+        assert isinstance(self.trajectory_task, COPASI.CTrajectoryTask), \
+            f"<ERROR, Task ID: {self.id}> Not a trajectory Task"
+
         # Run a deterministic time course
         self.trajectory_task.setMethodType(co.CTaskEnum.Method_deterministic)
 
@@ -464,29 +540,6 @@ class TrajectoryTask:
         # Set the initial time of the simulation
         self.datamodel.getModel().setInitialTime(conf.initial_time)
 
-    def run_task(self) -> bool:
-        """
-        Run a Time-Course simulation with COPASI and returns TRUE
-        If no error occurred, otherwise it returns False.
-
-        :param trajectory_task: a handle to the Time-Course Task
-        :return: True if no errors, False otherwise
-        """
-        try:
-            # Run the trajectory task
-            result = self.trajectory_task.process(True)
-
-            # Check if some error occurred
-            if not result:
-                handle_run_errors(self.id)
-                return False
-
-            # If no error occured then just return True
-            return True
-        except Exception:
-            handle_run_errors(self.id)
-            return False
-
     def print_results(self) -> None:
         """
         This method prints the final result of the simulation to
@@ -513,10 +566,34 @@ class TrajectoryTask:
             num_vars = time_series.getNumVariables()
             last_index = time_series.getRecordedSteps() - 1
             for nvar in range(0, num_vars):
+                
                 # Here we get the particle numbers (at least for species)
                 hfile.write("    {0}: {1}\n".format(time_series.getTitle(nvar), time_series.getData(last_index, nvar)))
         
         return
+    
+    def run_task(self) -> bool:
+        """
+        Run a Time-Course simulation with COPASI and returns TRUE
+        If no error occurred, otherwise it returns False.
+
+        :param trajectory_task: a handle to the Time-Course Task
+        :return: True if no errors, False otherwise
+        """
+        try:
+            # Run the trajectory task
+            result = self.trajectory_task.process(True)
+
+            # Check if some error occurred
+            if not result:
+                handle_run_errors(self.id)
+                return False
+
+            # If no error occured then just return True
+            return True
+        except Exception:
+            handle_run_errors(self.id)
+            return False
 
     def run(self, conf: TaskConfiguration) -> None:
         """
@@ -528,19 +605,41 @@ class TrajectoryTask:
         # 1. Print the basic information
         self.print_informations()
 
-        # 2. Setup the trajectory task
-        self.setup_task(conf)
+        print(f"[*] Starting Job: {self.job}")
 
-        # 3. Simulate
-        print(f"[*] Running Task ID: {self.id}")
+        start_time = time.time()
+        # for x in self._generate_new_parameters():
+        #     self._change_parameter_values(x)
+
+        #     # 2. Setup the trajectory task
+        #     self.setup_task(conf)
+
+        #     # 3. Simulate
+        #     print(f"[*] Running Job {self.job} Task ID: {self.id}")
+        #     result = self.run_task()
+
+        #     if not result:
+        #         print(f"<ERROR, Job {self.job}, Task ID: {self.id}> Simulation Failed", file=sys.stderr)
+            
+        #     # 4. Print the final results
+        #     self.print_results()
+
+        #     self.count += 1
+        #     self.id = generate_taskid(self.filename, count=self.count)
+        #     self._initialize_files()
+
+        self.setup_task(conf)
         result = self.run_task()
 
-        assert result, \
-            f"<ERROR, Task ID: {self.id}> Simulation Failed"
-        
-        # 4. Print the final results
-        self.print_results()
+        self.count += 1
+        self.id = generate_taskid(self.filename, count=self.count)
+        self._initialize_files()
+        self.setup_task(conf)
 
+        result = self.run_task()
+
+        end_time = time.time()
+        print(f"[*] End Job {self.job}. Elapsed time: {end_time - start_time} sec")
 
 #####################################################################################################
 ################################## POST-SIMULATION FUNCTIONS ########################################
@@ -666,24 +765,28 @@ if __name__ == "__main__":
 
     model = load_model(model_path)
     datamodel = model.getObjectDataModel()
-    ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001")
+    ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001", 1, 3)
+    # for x in ttask._generate_new_parameters():
+    #     ttask._change_parameter_values(x)
+    #     print_parameters(ttask.get_model())
+
     ttask.run(task_conf)
 
-    dense_output = load_report(ttask.output_file)
-    variables = [x for x in dense_output.columns if x != "time"]
-    print(get_mean_std(dense_output, variables))
+    # dense_output = load_report(ttask.output_file)
+    # variables = [x for x in dense_output.columns if x != "time"]
+    # print(get_mean_std(dense_output, variables))
 
-    stat_norm = normalize(dense_output, variables)
-    clas_norm = normalize(dense_output, variables, ntype="classical")
+    # stat_norm = normalize(dense_output, variables)
+    # clas_norm = normalize(dense_output, variables, ntype="classical")
 
-    print("\n\n----- NORMALIZATION WITH STATISTICHAL NORM -----")
-    print(stat_norm)
+    # print("\n\n----- NORMALIZATION WITH STATISTICHAL NORM -----")
+    # print(stat_norm)
 
-    print("\n\n----- NORMALIZATION WITH CLASSICAL NORM -----")
-    print(clas_norm)
+    # print("\n\n----- NORMALIZATION WITH CLASSICAL NORM -----")
+    # print(clas_norm)
 
-    print("\n\n----- MEAN AND STANDARD DEVIATION FOR CLASSICAL NORM -----")
-    print(get_mean_std(clas_norm, variables))
+    # print("\n\n----- MEAN AND STANDARD DEVIATION FOR CLASSICAL NORM -----")
+    # print(get_mean_std(clas_norm, variables))
 
     # variables = [x for x in dense_output.columns if not x.endswith("_output") and x != "time"]
     # plot(dense_output, variables)
