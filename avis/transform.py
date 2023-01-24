@@ -1,63 +1,9 @@
-from typing import Tuple, List, Generator, Union
-import basico.biomodels as biomodels
 from multiprocessing import Pool
+import avis.utils as utils
+from typing import List
 import os.path as opath
-import numpy as np
 import libsbml
-import math
 import os
-
-
-class Errors:
-    FILE_NOT_EXISTS  = 1
-    XML_READ_ERROR   = 2
-    CONVERSION_ERROR = 3
-
-
-###################################################################################################
-################################## MODEL TRANSFORMATION FUNCTIONS #################################
-###################################################################################################
-
-def print_errors(doc: libsbml.SBMLDocument, nerrors: int) -> None:
-    """
-    Print all the errors for a given SBML document
-
-    :param doc:     A handle to the SBML document
-    :param nerrors: The number of errors to be printed
-    """
-    for i in range(0, nerrors):
-        format_string = "[line=%d] (%d) <category: %s, severity: %s> %s"
-        error: libsbml.XMLError = doc.getError(i)
-        error_line = error.getLine()
-        error_id = error.getErrorId()
-        error_category = error.getCategory()
-        error_severity = error.getSeverity()
-        error_message = error.getMessage()
-
-        print(format_string % (
-            error_line, error_id, error_category,
-            error_severity, error_message
-        ))
-
-    exit(Errors.XML_READ_ERROR)
-
-
-def load_sbml(sbmlpath: str) -> libsbml.SBMLDocument:
-    """
-    Given an SBML file with the absolute path load the file as an SBML document
-
-    :param sbmlpath: the absolute path to the SBML file
-    :return: a handler to the SBMLDocument given by the SBML file
-    """
-    # Read the SBML and obtain the Document
-    reader = libsbml.SBMLReader()
-    document = reader.readSBML(sbmlpath)
-    
-    # Check if there are errors after reading and in case print those errors
-    if document.getNumErrors() > 0:
-        print_errors(document, document.getNumErrors())
-
-    return document
 
 
 def sbml_to_raterules(document: libsbml.SBMLDocument) -> libsbml.SBMLDocument:
@@ -74,22 +20,10 @@ def sbml_to_raterules(document: libsbml.SBMLDocument) -> libsbml.SBMLDocument:
     conv_properties.addOption("replaceReactions")
     conversion_result = document.convert(conv_properties)
     if conversion_result != libsbml.LIBSBML_OPERATION_SUCCESS:
-        print_errors(document, document.getNumErrors())
-        exit(Errors.CONVERSION_ERROR)
+        utils.print_errors(document, document.getNumErrors())
+        exit(utils.Errors.CONVERSION_ERROR)
     
     return document
-
-
-def save_model(model: libsbml.Model, path: str) -> None:
-    """
-    Write a SBML Model inside a file
-
-    :param model: a handle to the SBML model
-    :param path:  a string representing the output path
-    """
-    writer = libsbml.SBMLWriter()
-    document = model.getSBMLDocument()
-    writer.writeSBMLToFile(document, path)
 
 
 def transform(sbmlfile: str, outputfile: str) -> None:
@@ -101,7 +35,7 @@ def transform(sbmlfile: str, outputfile: str) -> None:
     :return:
     """
     # Obtain the corresponding document
-    document = load_sbml(sbmlfile)
+    document = utils.load_sbml(sbmlfile)
 
     # Convert all reaction to rate rules
     document = sbml_to_raterules(document)
@@ -110,31 +44,7 @@ def transform(sbmlfile: str, outputfile: str) -> None:
     model = document.getModel()
 
     # Save the new model
-    save_model(model, outputfile)
-
-
-#####################################################################################################
-################################## MODEL TRANSFORMATION DOWNLOADING #################################
-#####################################################################################################
-
-
-def download_model(prefix_path: str, model_id: int) -> str:
-    """
-    Download a SBML model given the ID from the BioModels Database
-
-    :param model_id:    the ID of the model that needs to be downloaded
-    :param prefix_path: the folder where store the new model
-    :return: the path where the model has been stored
-    """
-    modelname = "BIOMD%05d.xml" % model_id
-    sbml_content = biomodels.get_content_for_model(model_id)
-    output_file = opath.join(opath.abspath(prefix_path), modelname)
-    open_mode = "x" if not opath.exists(output_file) else "w"
-
-    with open(output_file, mode=open_mode, encoding="utf-8") as fhandle:
-        fhandle.write(sbml_content)
-    
-    return output_file
+    utils.save_model(model, outputfile)
 
 
 def transform_model(sbml_path: str) -> str:
@@ -170,7 +80,7 @@ def convert_one(args: List[any]) -> str:
     prefix_path, model_id = args
 
     # Download the model
-    model_path = download_model(prefix_path, model_id + 1)
+    model_path = utils.download_model(prefix_path, model_id + 1)
     print(f"({model_id}) [*] Dowloaded file {model_path}")
 
     # Transform the model
@@ -178,36 +88,6 @@ def convert_one(args: List[any]) -> str:
     print(f"({model_id}) [*] Transformed model file {trans_model_path}")
 
     return trans_model_path
-
-
-def get_ranges(nmax: int, cpu_count: int) -> List[Tuple[int, int]]:
-    """
-    Given a maximum horizon and the number of cpus return a number
-    of ranges between the max number and the cpu count. The number of 
-    returned ranges is exactly (nmax / cpu_count) if nmax is a
-    multiple of cpu_count, otherwise it is (nmax / cpu_count) + (nmax % cpu_count).
-
-    example:
-        >>> get_ranges(67, 16)
-        [[0, 16], [16, 32], [32, 48], [48, 64], [64, 67]]
-    
-    :param nmax:      the maximum horizon
-    :param cpu_count: the total number of cpus
-    :return: a list containing all the ranges
-    """
-    count = 0
-    ranges = []
-    while count < nmax:
-        if nmax < cpu_count:
-            ranges.append([count, nmax])
-        else:
-            condition = count + cpu_count < nmax
-            operator = cpu_count if condition else nmax % cpu_count
-            ranges.append([count, count + operator])
-
-        count += cpu_count
-
-    return ranges
 
 
 def convert_models(prefix_path: str, nmodels: int) -> List[str]:
@@ -220,7 +100,7 @@ def convert_models(prefix_path: str, nmodels: int) -> List[str]:
     """
     output_paths = []
     cpu_count = os.cpu_count()
-    for (minc, maxc) in get_ranges(nmodels, cpu_count):
+    for (minc, maxc) in utils.get_ranges(nmodels, cpu_count):
         with Pool(cpu_count) as pool:
             args = list(map(lambda x: (prefix_path, x), range(minc, maxc)))
             trans_model_paths = pool.map(convert_one, args)
@@ -229,124 +109,13 @@ def convert_models(prefix_path: str, nmodels: int) -> List[str]:
     return output_paths
 
 
-def write_paths(paths: List[str], output_path: str) -> None:
-    """
-    Save the list of paths inside a file: one path per row
-
-    :param paths:       the list with all the paths
-    :param output_path: the file where to store the pats
-    :return:
-    """
-    abs_output_path = opath.abspath(output_path)
-    open_mode = "x" if not opath.exists(abs_output_path) else "w"
-    with open(abs_output_path, mode=open_mode, encoding="utf-8") as fhandle:
-        file_content = "\n".join(paths)
-        fhandle.write(file_content)
-
-
-def remove_original(paths: List[str]) -> None:
-    """
-    Remove the original model files
-
-    :param paths: the list with all the output paths
-    :return:
-    """
-    for path in paths:
-        filename, extension = path.split("_output")
-        original_filepath = f"{filename}{extension}"
-        os.remove(original_filepath)
-
-
-###################################################################################################
-################################## MODEL FUNCTIONS FOR SIMULATIONS ################################
-###################################################################################################
-
-def to_integral(params: List[float]) -> List[float]:
-    """
-    Given a list of parameters convert each parameter from the 
-    original value to a value between 1 and 9. That is, given
-    a parameter value x we obtain z = x / (10 ** int(log10(x))).
-
-    :param params: the list with all the parameters value
-    :return: the new list of parameters
-    """
-    scale = lambda x: x / (10 ** int(math.log10(x)))
-    new_params = list(map(scale, params))
-    return new_params
-
-
-def to_string(vector: Union[np.ndarray, List[float]]) -> str:
-    """
-    Convert a Numpy vector to a string.
-
-    :param vector: the input vector
-    :return: the string representation
-    """
-    if isinstance(vector, np.ndarray):
-        vector = vector.tolist()
-
-    return " ".join(list(map(str, vector)))
-
-
-def get_parameter_combinations(params: List[float], n_sample: int=-1) -> Generator[List[float], None, None]:
-    """
-    Generate each time a combination of all the parameters (in order)
-    such that each parameter is transformed like p_value * 10 ** (-x)
-    where x is a value between 1 and 10. Moreover before generating
-    all the combinations, all the parameters are scaled as values
-    betwee 0 and 1 using `to_integral` function.
-
-    It is possible to decide how many sample we would like the
-    function to generate. The default value is -1, and in this case
-    the number of generated samples is exactly p_len ** 10 // 2. 
-
-    :param params:   The input vectors with all the parameters of the model
-    :param n_sample: The number of samples that we want to generate
-    :return: A generator that generate each time a sample
-    """
-    # Initialize the matrix with all the parameters already modified
-    params = to_integral(params)
-    np_param_matrix = np.array([params] * 10).T
-    modifiers = np.array([[1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]])
-    path_matrix = np_param_matrix * modifiers
-
-    # Initialize variables for the generation
-    taken_combinations = dict()
-    max_row_count = path_matrix.shape[0]
-    current_sample_number = 0
-
-    # Take the maximum number of possible combinations
-    # that is exactly the number of columns power the
-    # lenght of the combination. In practice we take the
-    # 50% of the sample, otherwise there will be high
-    if n_sample == -1:
-        n_sample = path_matrix.shape[1] ** path_matrix.shape[0]
-        n_sample = n_sample // 2
-
-    while current_sample_number < n_sample:
-
-        current_combination = []
-        for current_row_index in range(0, max_row_count):
-            current_row = path_matrix[current_row_index, :]
-            chosen_value = np.random.choice(current_row)
-            current_combination.append(chosen_value.item())
-        
-        current_combination_str = to_string(current_combination)
-        if not current_combination_str in taken_combinations:
-            taken_combinations[current_combination_str] = True
-            current_sample_number += 1
-            yield current_combination
-    
-    return
-
-
 def main() -> None:
     prefix_path = opath.join(os.getcwd(), "tests")
     nmodels = 1
 
     paths = convert_models(prefix_path, nmodels)
-    write_paths(paths, opath.join(os.getcwd(), "data/paths.txt"))
-    remove_original(paths)
+    utils.write_paths(paths, opath.join(os.getcwd(), "data/paths.txt"))
+    utils.remove_original(paths)
 
 
 if __name__ == "__main__":

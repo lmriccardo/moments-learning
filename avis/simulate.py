@@ -1,178 +1,17 @@
-from typing import List, Optional, Tuple, Dict, Generator
-from avis.transform import get_parameter_combinations
-from typing import List, Optional, Tuple, Dict, Generator
+from typing import List, Optional, Dict, Generator
 from dataclasses import dataclass
-import matplotlib.pyplot as plt
 from datetime import datetime
+import avis.utils as utils
 import os.path as opath
 from basico import *
 import COPASI as co
 import pandas as pd
-import time
+import random
 
 
-#####################################################################################################
-################################## UTILITY FUNCTION FOR SIMULATION ##################################
-#####################################################################################################
-
-
-def read_paths_file(paths_file: str) -> List[str]:
-    """
-    Read the content of the paths file. The file contains for each
-    row the current path of a model inside a folder.
-
-    :param paths_file: the absolute path to the file
-    :return: a list with all the paths
-    """
-    paths = []
-    with open(paths_file, mode="r", encoding="utf-8") as fhandle:
-        while (line := fhandle.readline()):
-            paths.append(line[:-1])
-    
-    return paths
-
-
-def load_model(path_to_model: str) -> co.CModel:
-    """
-    Load the SBML model from a filename to a COPASI Model
-
-    :param path_to_model: the absolute path to the SBML model file
-    :return: a handle to the respective COPASI model
-    """
-    data_model: co.CDataModel = co.CRootContainer.addDatamodel()
-    result = data_model.importSBML(path_to_model)
-
-    # If loading failure
-    if not result:
-        print(f"Error: import SBML {path_to_model} failed")
-        exit(1)
-
-    model: co.CModel = data_model.getModel()
-    return model
-
-
-def print_species(model: co.CModel, foutput: Optional[str] = None) -> None:
-    """
-    Print all the species of the Model inside a file or on the std output.
-    Whenever the output file is given, the content will be writte in CSV.
-    
-    :param model:   the COPASI Model
-    :param foutput: an optional file where the write the output
-    :return:
-    """
-    if not foutput:
-        print("\n[*] Model Species Overview\n")
-
-    # Get the total number of species inside the model
-    num_species = model.getNumMetabs()
-
-    # Define the dictionary that will construct the DataFrame
-    pandas_df_dict = {
-        "Specie"                : [], "Compartment": [], 
-        "Initial Concentration" : [], "Expression" : [], 
-        "Output"                : []
-    }
-
-    species, compartments, iconcentrations, expressions, outputs = [], [], [], [], []
-    for nspecie in range(num_species):
-        specie: co.CMetab = model.getMetabolite(nspecie)
-        specie_name = specie.getObjectName()                    # Get the specie name
-        compartment = specie.getCompartment().getObjectName()   # Get the compartment name
-        initial_conc = specie.getInitialConcentration()         # Get the initial concentration
-        expression = specie.getExpression()                     # Get the expression for that specie
-        output = specie_name.endswith("_output")                # True if variable is for output, False otherwise
-
-        species.append(specie_name)
-        compartments.append(compartment)
-        iconcentrations.append(initial_conc)
-        expressions.append(expression)
-        outputs.append(output)
-    
-    pandas_df_dict["Specie"] = species
-    pandas_df_dict["Compartment"] = compartments
-    pandas_df_dict["Initial Concentration"] = iconcentrations
-    pandas_df_dict["Expression"] = expressions
-    pandas_df_dict["Output"] = outputs
-
-    df = pd.DataFrame(data=pandas_df_dict)
-
-    # If the output file path is not given then
-    # print on the standard output
-    if not foutput:
-        print(df)
-        return
-
-    # Otherwise write inside the file as CSV content
-    df.to_csv(foutput)
-
-
-def print_parameters(model: co.CModel, foutput: Optional[str]=None) -> None:
-    """
-    Print information about all the parameters of the model on file or std output.
-    Whenever the output file is given, the content will be writte in CSV.
-
-    :param model:   a handle to a COPASI model
-    :param foutput: an optional file where the write the output
-    :return:
-    """
-    if not foutput:
-        print("\n[*] Model Parameters Overview\n")
-
-    # Get the total number of parameters inside the model
-    num_params = model.getNumModelValues()
-
-    # Define the dictionary that will construct the DataFrame
-    pandas_df_dict = {"Parameter": [], "Type": [], "Value": []}
-
-    parameters, types, values = [], [], []
-    for nparam in range(num_params):
-        param: co.CModelValue = model.getModelValue(nparam)
-        param_name = param.getObjectName()    # Get the name of the parameter
-        param_value = param.getInitialValue() # Get the value of the parameter
-        param_type = param.isFixed()          # True if the parameter is fixed, False otherwise
-
-        parameters.append(param_name)
-        types.append(param_type)
-        values.append(param_value)
-
-    pandas_df_dict["Parameter"] = parameters
-    pandas_df_dict["Type"] = types
-    pandas_df_dict["Value"] = values
-
-    df = pd.DataFrame(data=pandas_df_dict)
-
-    # If the output file path is not given then
-    # print on the standard output
-    if not foutput:
-        print(df)
-        return
-
-    # Otherwise write inside the file as CSV content
-    df.to_csv(foutput)
-
-
-def handle_run_errors(task_id: str) -> None:
-    """
-    Print error messages from COPASI when the trajectory task failed.
-
-    :param task_id: the ID of the task that call this function
-    :return:
-    """
-    import sys
-    sys.stderr.write(f"[*] <ERROR, Task ID:{task_id}> Running The time-course simulation failed.\n")
-
-    # Check if there are additional messages
-    if COPASI.CCopasiMessage.size() > 0:
-        # Print the message on the standard error in chronological order
-        sys.stderr.write(
-            f"[*] <ERROR, Task ID: {task_id}> " + COPASI.CCopasiMessage.getAllMessageText(True)
-        )
-
-
-#####################################################################################################
-################################## TRAJECTORY TASK CLASS DEFINITION #################################
-#####################################################################################################
-
+# -----------------------------------------------------------------------------
+# Trajectory Task configurations and class
+# -----------------------------------------------------------------------------
 
 def generate_taskid(model_name: str, count: int) -> str:
     """
@@ -239,7 +78,7 @@ def create_report(datamodel     : co.CDataModel,
     report.setIsTable(False)
 
     # The entry of the output should be separated by ", "
-    report.setSeparator(co.CCopasiReportSeparator(", "))
+    report.setSeparator(co.CCopasiReportSeparator(","))
 
     # We need a handle to the header and the body
     # the header will display the ids of the metabolites
@@ -327,6 +166,38 @@ class TaskConfiguration:
     report_fixed_species : bool             # If consider in the report also FIXED value species
 
 
+def generate_default_configuration() -> TaskConfiguration:
+    """
+    Generate a default configuration for the Trajectory Task.
+    The default configuration is the following:
+
+        - step size = 0.01
+        - initial time = 0.0
+        - simulation horizon = 100.0
+        - generate time series = True
+        - automatic step size = False
+        - output event = False
+        - absolute tolerance 1.0e-9
+        - relative tolerance 1.0e-9
+        - output also fixed species = False
+        - output concentration or amount ? Concentration
+
+    :return: a new TaskConfiguration object already configured 
+    """
+    return TaskConfiguration(
+        step_size            = 0.01,
+        initial_time         = 0.0,
+        sim_horizon          = 100.0,
+        gen_time_series      = True,
+        automatic_step_size  = False,
+        output_event         = False,
+        abs_tolerance        = 1.0e-09,
+        rel_tolerance        = 1.0e-09,
+        report_out_stype     = "Concentration",
+        report_fixed_species = True
+    )
+
+
 class TrajectoryTask:
     """
     A class used to represent a COPASI Trajectory Task. Each taks is independent
@@ -354,11 +225,22 @@ class TrajectoryTask:
         the file path where to store all the dense output for the simulation
     filename : str
         the filename of the model (without the extension)
+    num_simulations : int
+        The total number of simulations
+    real_parameters_value : Dict[str, float]
+        A dictionary containing the original values for the parameters of the model
+    modified_parameters_values : List[Dict[str, float]]
+        A List containing mapping from parameters name and parameter values
+    runned : bool
+        If the trajectory task has been runned or not
 
     Methods
     -------
     get_model(self) -> co.CModel:
         Return the model handler of the current datamodel
+
+    def load_model(self) -> None:
+        Load a new model from file
     
     print_informations(self) -> None
         Print all the useful information about the input model
@@ -373,20 +255,23 @@ class TrajectoryTask:
         Print the result of the simulation to the output file
     """
 
-    def __init__(self, datamodel  : COPASI.CDataModel, # A handle to the data model
-                       log_dir    : str,               # The path where to store the log file
-                       output_dir : str,               # The path where to store the output and the dense output
-                       filename   : str,               # The model filename (without the extension)
-                       job        : int,               # The Job Number
-                       nsim       : int                # The total number of different simulations to run
+    def __init__(self, model_file : str, # A handle to the data model
+                       log_dir    : str, # The path where to store the log file
+                       output_dir : str, # The path where to store the output and the dense output
+                       filename   : str, # The model filename (without the extension)
+                       job        : int, # The Job Number
+                       nsim       : int  # The total number of different simulations to run
     ) -> None:
         """
         :param datamodel : a handle to the COPASI Data model
         :param log_dir   : The path where to store the log files
         :param output_dir: The path where to store the output and the dense output
         :param filename  : The model filename (without the extension)
+        :param job       : The Job ID of the task
+        :param nsim      : total number of different simulations to run
         """
-        self.datamodel       = datamodel
+        self.model_path      = model_file
+        self.datamodel       = None
         self.count           = 0
         self.id              = generate_taskid(filename, count=self.count)
         self.trajectory_task = None
@@ -403,7 +288,12 @@ class TrajectoryTask:
         self.output_files = []
         self.res_files = []
 
-        self._initialize_files()
+        self.real_parameters_values = dict()
+        self.modified_parameters_values = []
+
+        self.runned = False
+
+        self.load_model()
 
     def _initialize_files(self):
         """ Initialize all the filenames required for the output """
@@ -455,7 +345,7 @@ class TrajectoryTask:
         parameter_names_list = list(parameter_dictionary.keys())
         
         # Start with the generation
-        for params_list in get_parameter_combinations(parameter_values_list, n_sample=self.num_simulations):
+        for params_list in utils.get_parameter_combinations(parameter_values_list, n_sample=self.num_simulations):
             yield dict(zip(parameter_names_list, params_list))
     
     def _change_parameter_values(self, param_dict: Dict[str, float]) -> None:
@@ -470,11 +360,17 @@ class TrajectoryTask:
             new_parameter_value = param_dict[current_parameter.getObjectName()]
             current_parameter.setInitialValue(new_parameter_value)
             
-        self.datamodel = hmodel.getObjectDataModel()
+        self.datamodel: co.CDataModel = hmodel.getObjectDataModel()
+        self.datamodel.exportSBML(self.model_path, overwriteFile=True, sbmlLevel=3, sbmlVersion=2)
 
     def get_model(self) -> co.CModel:
         """ Return the model handler of the current datamodel """
         return self.datamodel.getModel()
+    
+    def load_model(self) -> None:
+        """ Load a new model from file """
+        model = load_model(self.model_path)
+        self.datamodel = model.getObjectDataModel()
 
     def print_informations(self) -> None:
         """
@@ -494,8 +390,8 @@ class TrajectoryTask:
 
         # Prints these two information into the respective file
         model_handler = self.datamodel.getModel()
-        print_species(model_handler, species_path)
-        print_parameters(model_handler, params_path)
+        utils.print_species(model_handler, species_path)
+        utils.print_parameters(model_handler, params_path)
 
     def setup_task(self, conf: TaskConfiguration) -> None:
         """
@@ -586,13 +482,13 @@ class TrajectoryTask:
 
             # Check if some error occurred
             if not result:
-                handle_run_errors(self.id)
+                utils.handle_run_errors(self.id)
                 return False
 
             # If no error occured then just return True
             return True
         except Exception:
-            handle_run_errors(self.id)
+            utils.handle_run_errors(self.id)
             return False
 
     def run(self, conf: TaskConfiguration) -> None:
@@ -605,139 +501,147 @@ class TrajectoryTask:
         # 1. Print the basic information
         self.print_informations()
 
+        # 2. Save the current parameters
+        self.real_parameters_values = self._get_parameters()
+
         print(f"[*] Starting Job: {self.job}")
 
-        start_time = time.time()
-        # for x in self._generate_new_parameters():
-        #     self._change_parameter_values(x)
+        # 3. Start the new simulations with new parameters
+        for x in self._generate_new_parameters():
 
-        #     # 2. Setup the trajectory task
-        #     self.setup_task(conf)
+            # 3.1. Change the model parameters and save the new model to file
+            self._initialize_files()
+            self._change_parameter_values(x)
+            self.modified_parameters_values.append(x)
 
-        #     # 3. Simulate
-        #     print(f"[*] Running Job {self.job} Task ID: {self.id}")
-        #     result = self.run_task()
+            # 3.2. Load the modified model into a new datamodel
+            self.load_model()
 
-        #     if not result:
-        #         print(f"<ERROR, Job {self.job}, Task ID: {self.id}> Simulation Failed", file=sys.stderr)
+            # 3.3. Setup the trajectory task
+            self.setup_task(conf)
+
+            # 3.4. Simulate
+            print(f"[*] Running Job {self.job} Task ID: {self.id}")
+            result = self.run_task()
+
+            # 3.5. Generate a new Task ID and initialize the files
+            # for the new incoming simulation
+            self.count += 1
+            self.id = generate_taskid(self.filename, count=self.count)
+
+            if not result:
+                print(f"<ERROR, Job {self.job}, Task ID: {self.id}> Simulation Failed", file=sys.stderr)
+                continue
             
-        #     # 4. Print the final results
-        #     self.print_results()
+            # 3.6. Print the final results
+            self.print_results()
 
-        #     self.count += 1
-        #     self.id = generate_taskid(self.filename, count=self.count)
-        #     self._initialize_files()
+        # 4. Restore the original parameter value into the origina model
+        self._change_parameter_values(self.real_parameters_values)
 
-        self.setup_task(conf)
-        result = self.run_task()
+        # 5. End the simulations
+        self.runned = True
 
-        self.count += 1
-        self.id = generate_taskid(self.filename, count=self.count)
-        self._initialize_files()
-        self.setup_task(conf)
+    def get_used_parameters(self) -> List[Dict[str, float]]:
+        """
+        Return the list of all the parameter mapping used for each simulation
 
-        result = self.run_task()
+        :return: the parameter mapping
+        """
+        return self.modified_parameters_values
 
-        end_time = time.time()
-        print(f"[*] End Job {self.job}. Elapsed time: {end_time - start_time} sec")
 
 #####################################################################################################
 ################################## POST-SIMULATION FUNCTIONS ########################################
 #####################################################################################################
 
 
-def load_report(report: str) -> pd.DataFrame:
+def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]=None) -> None:
     """
-    Load the report file into a pandas DataFrame
+    Takes as input the Trajectory Task that has been runned
+    and generate a new file CSV in the data folder such that
+    each row is a simulation and columns are divided as follow:
+    first N columns are the initial values of the parameters, 
+    the following 2 * M columns are the mean and the std.
+    deviation computed for each species throgh the entire simulation.
 
-    :param report: the path to the report file
-    :return: a pandas DataFrame with the report
+    :param trajectory_task: A handle to a TrajectoryTask Object
+    :param data_path      : The full qualified path of the data folder
+    :return:  
     """
-    return pd.read_csv(report)
+    # Check that the simulations has been runned
+    assert trajectory_task.runned, \
+        f"<ERROR, Job {trajectory_task.job}> No simulation has been runned"
 
+    # Check if the data folder is either None or it does exists
+    if not data_path or not opath.exists(opath.abspath(data_path)):
 
-def plot(points: pd.DataFrame, vars: List[str]) -> None:
-    """
-    Plot one or more variables given a matrix of points
+        try:
+            # If does not exists or it is not then create a new data folder
+            data_path = opath.join(os.getcwd(), "data/simulations")
+            os.mkdir(data_path)
+        except FileExistsError:
+            ... # Maybe the given path wasn't a full path
 
-    :param points: a pandas DataFrame with the points
-    :param vars: a list of variable names
-    :return:
-    """
-    time_values = points["time"].values      # Take all times values
-    vars_values = points.loc[:, vars].values # Take all variables values
-    
-    # Set some basic configuration for the plot
-    plt.figure(figsize=[15.0, 8.0])
-    plt.xlabel("Time")
-    plt.ylabel("Species")
+    data_path = opath.abspath(data_path)
 
-    # Iterate all the variables and plot
-    for idx, var in enumerate(vars):
-        plt.plot(time_values, vars_values[:, idx], label=var)
+    # Obtain the parameter list
+    parameters_list = trajectory_task.get_used_parameters()
 
-    plt.legend(loc="upper right")
-    plt.show()
+    # Load the results for each simulation as dictionaries of (normalized) values
+    species_mean_std: Dict[str, List[float]] = dict()
+    for output_file in trajectory_task.output_files:
+        
+        try:
+            # Load the report and produce a DenseOutput DataFrame
+            dense_output = utils.load_report(output_file)
+            variables = [x for x in dense_output.columns if x != "time"]
 
+            # Compute the normalization and takes the mean and std for each variable
+            class_normalization_variables = utils.normalize(dense_output, variables, ntype="classical")
+            mean_std_variables = utils.get_mean_std(class_normalization_variables, variables)
+            mean_std_variables_dict = mean_std_variables.to_dict()
 
-def get_mean_std(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
-    """
-    Return a pandas dataFrame with only the mean and the standard
-    deviation for all the variables specified in the input list.
+            # Initialize the dictionary of species and fill it with the values
+            for variable in variables:
+                mean_var = f"mean_{variable}".upper()
+                std_var  = f"std_{variable}".upper()
 
-    :param points: a pandas DataFrame with the points
-    :param vars: a list of variable's name
-    :return: a DataFrame with mean and std for all variables
-    """
-    description = points.describe()
-    return description.loc[["mean", "std"], vars]
+                if not mean_var in species_mean_std:
+                    species_mean_std[mean_var] = []
+                    species_mean_std[std_var] = []
+            
+                mean_var_value = mean_std_variables_dict[variable]["mean"]
+                std_var_value  = mean_std_variables_dict[variable]["std"]
 
+                species_mean_std[mean_var].append(mean_var_value)
+                species_mean_std[std_var].append(std_var_value)
+            
+        except RuntimeWarning:
+            ...
 
-def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -> pd.DataFrame:
-    """
-    Normalize each point (pointed by vars) in the input dataframe
-    with the usual formula: z = (x - mean) / std. Then return
-    the newly created and normalized dataframe. The applied 
-    normalization depends on the input type: "statistical" means
-    the one with mean and std. deviation; "classical" means between
-    0 and 1, i.e., take the min value away and divide by the
-    difference between the max and the min. 
+    # Then we need to flatten the parameter list of dictionaries
+    # into a dictionary of parameters list
+    parameters_dictionary = { p.lower() : [] for p in parameters_list[0].keys() }
+    for parameter_dict in parameters_list:
+        for parameter, value in parameter_dict.items():
+            parameters_dictionary[parameter.lower()].append(value)
+        
+    # Then we need to merge the two dictionaries and create the DataFrame
+    df_dict = parameters_dictionary
+    df_dict.update(species_mean_std)
+    data_df = pd.DataFrame(data=df_dict)
 
-    :param points: a pandas DataFrame with the points
-    :param vars: a list of variable's name
-    :param ntype: (optional) normalization type "statistical" or "classical"
-    :return: the normalized dataframe
-    """
-    # First obtain the mean and the std deviation for each input variable
-    description = points.describe()
-    description = description.loc[:, vars]
+    # Craft the name of the data file that will contains the data
+    data_filename = output_file.split("-")[-1].split("_")[0] + ".csv"
+    data_file = opath.join(data_path, data_filename)
+    data_df.to_csv(data_file)
 
-    # Initialize the data for the new frame with the time column
-    data = {"time" : points["time"].values.tolist()}
-
-    # Iterate for each input variable and normalize them
-    for var in vars:
-        var_values = points.loc[:, var].values
-        if ntype == "statistical":
-            # Get the mean and the std for that variable
-            mean = description.loc[["mean"], [var]].values.item()
-            std  = description.loc[["std"],  [var]].values.item()
-
-            # Normalize the variable values
-            var_values = (var_values - mean) / std
-        else:
-            # Get the mininum and the maximum value
-            min_value = description.loc[["min"], [var]].values.item()
-            max_value = description.loc[["max"], [var]].values.item()
-
-            # Normalize the variable values
-            var_values = (var_values - min_value) / (max_value - min_value)
-
-        data[var] = var_values.tolist()
-
-    norm_df = pd.DataFrame(data, columns=["time"] + vars)
-    return norm_df
-
+    # Remove the report and res file
+    for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
+        os.remove(report_file)
+        os.remove(res_file)
+ 
 
 if __name__ == "__main__":
     import sys
@@ -745,48 +649,15 @@ if __name__ == "__main__":
         model_path = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_output.xml"
         log_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\log\\"
         output_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\runs\\"
+        data_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\data\\simulations"
     else:
         model_path = "/Users/yorunoomo/Desktop/Projects/moments-learning/tests/BIOMD00001_output.xml"
         log_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/log/"
         output_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/runs/"
+        data_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/data/simulations"
 
-    task_conf = TaskConfiguration(
-        step_size            = 0.01,
-        initial_time         = 0.0,
-        sim_horizon          = 100.0,
-        gen_time_series      = True,
-        automatic_step_size  = False,
-        output_event         = False,
-        abs_tolerance        = 1.0e-09,
-        rel_tolerance        = 1.0e-09,
-        report_out_stype     = "Concentration",
-        report_fixed_species = True
-    )
-
-    model = load_model(model_path)
-    datamodel = model.getObjectDataModel()
-    ttask = TrajectoryTask(datamodel, log_dir, output_dir, "BIOMD00001", 1, 3)
-    # for x in ttask._generate_new_parameters():
-    #     ttask._change_parameter_values(x)
-    #     print_parameters(ttask.get_model())
-
+    task_conf = generate_default_configuration()
+    ttask = TrajectoryTask(model_path, log_dir, output_dir, "BIOMD00001", 1, 3)
     ttask.run(task_conf)
 
-    # dense_output = load_report(ttask.output_file)
-    # variables = [x for x in dense_output.columns if x != "time"]
-    # print(get_mean_std(dense_output, variables))
-
-    # stat_norm = normalize(dense_output, variables)
-    # clas_norm = normalize(dense_output, variables, ntype="classical")
-
-    # print("\n\n----- NORMALIZATION WITH STATISTICHAL NORM -----")
-    # print(stat_norm)
-
-    # print("\n\n----- NORMALIZATION WITH CLASSICAL NORM -----")
-    # print(clas_norm)
-
-    # print("\n\n----- MEAN AND STANDARD DEVIATION FOR CLASSICAL NORM -----")
-    # print(get_mean_std(clas_norm, variables))
-
-    # variables = [x for x in dense_output.columns if not x.endswith("_output") and x != "time"]
-    # plot(dense_output, variables)
+    generate_data_file(ttask, data_dir)
