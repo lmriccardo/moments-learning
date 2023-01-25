@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict, Generator
 from dataclasses import dataclass
+from multiprocessing import Pool
 from datetime import datetime
 import avis.utils as utils
 import os.path as opath
@@ -551,9 +552,9 @@ class TrajectoryTask:
         return self.modified_parameters_values
 
 
-#####################################################################################################
-################################## POST-SIMULATION FUNCTIONS ########################################
-#####################################################################################################
+# -----------------------------------------------------------------------------
+# Generation Results file function
+# -----------------------------------------------------------------------------
 
 
 def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]=None) -> None:
@@ -641,6 +642,70 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
         os.remove(report_file)
         os.remove(res_file)
+
+
+# -----------------------------------------------------------------------------
+# Running simulations function
+# -----------------------------------------------------------------------------
+
+def run_one(
+    model_path: str, log_dir: str, output_dir: str, data_dir: str, job_id: int, nsim: int
+) -> None:
+    """
+    Run `nsim` simulation for the single input model
+
+    :param model_path: the absolute path to the SBML
+    :param log_dir   : the absolute path to the log folder where to store the parameter and specie files
+    :param output_dir: the absolute path to the output dir where to store the report and the result files
+    :param data_dir  : the absolute path to the data folder where to store the output data
+    :param job_id    : The ID of the job (just an integer)
+    :param nsim      : the total number of simultations to run
+    :return:
+    """
+    # Get the filename of the model
+    delimiter = "\\" if sys.platform == "win32" else "/"
+    filename = model_path.split(delimiter)[-1].split("_")[0]
+
+    # Setup and run the trajectory task
+    task_conf = generate_default_configuration()
+    ttask = TrajectoryTask(model_path, log_dir, output_dir, filename, job_id, nsim)
+    ttask.run(task_conf)
+
+    # Save the results
+    generate_data_file(ttask, data_dir)
+
+
+def run_simulations(
+    paths_file: str, log_dir: str, output_dir: str,  data_dir: str, nsim_per_model: int = 100
+) -> None:
+    """
+    Run `nsim_per_model` simulations per each model belonging to the paths file
+    where the paths file is a path that in each line contains the
+    fully qualified path to the SBML of that model.
+
+    :param paths_file    : the absolute path to the paths file
+    :param log_dir   : the absolute path to the log folder where to store the parameter and specie files
+    :param output_dir: the absolute path to the output dir where to store the report and the result files
+    :param data_dir  : the absolute path to the data folder where to store the output data
+    :param nsim_per_model: the number of simulations per model
+    :return
+    """
+    path_list = utils.read_paths_file(paths_file)
+    cpu_count = os.cpu_count()
+    for (minc, maxc) in utils.get_ranges(len(path_list), cpu_count):
+        with Pool(cpu_count) as pool:
+            args = list(
+                map(
+                lambda x: (path_list[x], 
+                           log_dir, 
+                           output_dir, 
+                           data_dir, 
+                           x, 
+                           nsim_per_model), 
+                range(minc, maxc)
+            ))
+
+            pool.map(run_one, args)
  
 
 if __name__ == "__main__":
