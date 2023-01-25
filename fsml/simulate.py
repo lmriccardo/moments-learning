@@ -2,12 +2,11 @@ from typing import List, Optional, Dict, Generator
 from dataclasses import dataclass
 from multiprocessing import Pool
 from datetime import datetime
-import avis.utils as utils
+import fsml.utils as utils
 import os.path as opath
 from basico import *
 import COPASI as co
 import pandas as pd
-import random
 
 
 # -----------------------------------------------------------------------------
@@ -34,7 +33,7 @@ def generate_taskid(model_name: str, count: int) -> str:
 
     hex_modelname = "".join(list(map(lambda x: hex(ord(x))[2:], model_name)))
 
-    return f"{hour}{minute}{seconds}-{hex(count)[2:]}-{hex_modelname}"
+    return f"{hex_modelname}-{hex(count)[2:]}-{hour}{minute}{seconds}"
 
 
 def create_report(datamodel     : co.CDataModel, 
@@ -531,7 +530,11 @@ class TrajectoryTask:
             self.id = generate_taskid(self.filename, count=self.count)
 
             if not result:
-                print(f"<ERROR, Job {self.job}, Task ID: {self.id}> Simulation Failed", file=sys.stderr)
+                # Remove res and report file from the list
+                self.output_files.pop()
+                self.res_files.pop()
+                self.modified_parameters_values.pop()
+                os.remove(self.output_file)
                 continue
             
             # 3.6. Print the final results
@@ -592,7 +595,7 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     # Load the results for each simulation as dictionaries of (normalized) values
     species_mean_std: Dict[str, List[float]] = dict()
     for output_file in trajectory_task.output_files:
-        
+
         try:
             # Load the report and produce a DenseOutput DataFrame
             dense_output = utils.load_report(output_file)
@@ -617,8 +620,8 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 
                 species_mean_std[mean_var].append(mean_var_value)
                 species_mean_std[std_var].append(std_var_value)
-            
-        except RuntimeWarning:
+
+        except AssertionError as ae:
             ...
 
     # Then we need to flatten the parameter list of dictionaries
@@ -634,14 +637,15 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     data_df = pd.DataFrame(data=df_dict)
 
     # Craft the name of the data file that will contains the data
-    data_filename = output_file.split("-")[-1].split("_")[0] + ".csv"
+    delimiter = "\\" if sys.platform == "win32" else "/"
+    data_filename = output_file.split("-")[0].split(delimiter)[-1] + ".csv"
     data_file = opath.join(data_path, data_filename)
     data_df.to_csv(data_file)
 
     # Remove the report and res file
-    for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
-        os.remove(report_file)
-        os.remove(res_file)
+    # for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
+    #     if opath.exists(report_file): os.remove(report_file)
+    #     if opath.exists(res_file): os.remove(res_file)
 
 
 # -----------------------------------------------------------------------------
@@ -706,23 +710,3 @@ def run_simulations(
             ))
 
             pool.map(run_one, args)
- 
-
-if __name__ == "__main__":
-    import sys
-    if sys.platform == "win32":
-        model_path = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\tests\\BIOMD00001_output.xml"
-        log_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\log\\"
-        output_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\runs\\"
-        data_dir = "C:\\Users\\ricca\\Desktop\\Projects\\Avis\\data\\simulations"
-    else:
-        model_path = "/Users/yorunoomo/Desktop/Projects/moments-learning/tests/BIOMD00001_output.xml"
-        log_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/log/"
-        output_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/runs/"
-        data_dir = "/Users/yorunoomo/Desktop/Projects/moments-learning/data/simulations"
-
-    task_conf = generate_default_configuration()
-    ttask = TrajectoryTask(model_path, log_dir, output_dir, "BIOMD00001", 1, 3)
-    ttask.run(task_conf)
-
-    generate_data_file(ttask, data_dir)

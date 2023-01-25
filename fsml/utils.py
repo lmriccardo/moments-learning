@@ -9,6 +9,7 @@ import numpy as np
 import libsbml
 import random
 import math
+import sys
 import os
 
 
@@ -166,7 +167,8 @@ def to_integral(params: List[float]) -> List[float]:
     :param params: the list with all the parameters value
     :return: the new list of parameters
     """
-    scale = lambda x: x / (10 ** int(math.log10(x)))
+    ceil = lambda x: x + 1 if x > 0 else x - 1
+    scale = lambda x: x / (10 ** int(ceil(math.log10(x)) if x != 0.0 else 0.0))
     new_params = list(map(scale, params))
     return new_params
 
@@ -490,7 +492,7 @@ def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -
             max_value = description.loc[["max"], [var]].values.item()
 
             # Normalize the variable values
-            var_values = (var_values - min_value) / (max_value - min_value)
+            var_values = (var_values - min_value) / ((max_value - min_value) + sys.float_info.epsilon)
 
         data[var] = var_values.tolist()
 

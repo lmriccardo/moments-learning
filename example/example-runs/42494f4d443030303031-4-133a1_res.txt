@@ -1,0 +1,25 @@
+N. Steps Time Series: 101 steps
+N. Variable Each Step: 21 vars
+
+The Final State is:
+    Time: 100.0
+    BasalACh2: 2.012186580859651e-26
+    IntermediateACh: 9.62639657380307e-27
+    ActiveACh: 3.0518456005714163e-24
+    Active: 52.56913069559895
+    BasalACh: 6.000140693450243e-18
+    Basal: 947.4544141157093
+    DesensitisedACh2: 1.176883362869818e-37
+    Desensitised: -4.278224510319757e-11
+    IntermediateACh2: -1.8781646321515772e-28
+    DesensitisedACh: 2.6351756440250366e-33
+    Intermediate: 5.225087404766231e-07
+    ActiveACh2: 1.878566142398334e-28
+    Values[kf_0]: 0.0
+    Values[kf_1]: 0.0
+    Values[kf_3]: 0.0
+    Values[kf_4]: 0.0
+    Values[kf_7]: 0.0
+    Values[kf_8]: 0.0
+    Values[kf_12]: 0.0
+    Values[kf_13]: 0.0

@@ -3,4 +3,4 @@ data/
 venv/
 log/
 runs/
-avis/__pycache__/
+*/__pycache__/

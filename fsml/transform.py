@@ -1,5 +1,5 @@
 from multiprocessing import Pool
-import avis.utils as utils
+import fsml.utils as utils
 from typing import List
 import os.path as opath
 import libsbml
@@ -64,7 +64,7 @@ def transform_model(sbml_path: str) -> str:
     return output_path
 
 
-def convert_one(args: List[any]) -> str:
+def convert_one(prefix_path: str, model_id: int) -> str:
     """
     Convert one model speciefied by the model_id input parameter
 
@@ -72,13 +72,9 @@ def convert_one(args: List[any]) -> str:
         This parameter must contains only three elements:
             - prefix_path: the path where to save the model
             - model_id:    the ID of the model in the BioModels database
-            - bvalue:      the normalization parameter
 
     :return: the path where the transformed model has been saved
     """
-    # Extrapolate arguments
-    prefix_path, model_id = args
-
     # Download the model
     model_path = utils.download_model(prefix_path, model_id + 1)
     print(f"({model_id}) [*] Dowloaded file {model_path}")
@@ -107,16 +103,3 @@ def convert_models(prefix_path: str, nmodels: int) -> List[str]:
             output_paths += trans_model_paths
     
     return output_paths
-
-
-def main() -> None:
-    prefix_path = opath.join(os.getcwd(), "tests")
-    nmodels = 1
-
-    paths = convert_models(prefix_path, nmodels)
-    utils.write_paths(paths, opath.join(os.getcwd(), "data/paths.txt"))
-    utils.remove_original(paths)
-
-
-if __name__ == "__main__":
-    main()
