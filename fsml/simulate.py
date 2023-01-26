@@ -638,7 +638,7 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 
     # Craft the name of the data file that will contains the data
     delimiter = "\\" if sys.platform == "win32" else "/"
-    data_filename = output_file.split("-")[0].split(delimiter)[-1] + ".csv"
+    data_filename = bytes.fromhex(output_file.split("-")[0].split(delimiter)[-1]).decode("ASCII") + ".csv"
     data_file = opath.join(data_path, data_filename)
     data_df.to_csv(data_file)
 

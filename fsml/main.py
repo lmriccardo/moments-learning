@@ -77,6 +77,9 @@ def __transform_and_simulate(**kwargs: Dict[str, any]) -> None:
 
 
 def main() -> None:
+    argument_parser = argparse.ArgumentParser()
+    argument_parser.add_argument("simulate", help="Flag that if sets to True then ")
+
     log_dir = opath.abspath(opath.join(os.getcwd(), "log"))
     output_dir = opath.abspath(opath.join(os.getcwd(), "runs"))
     data_dir = opath.abspath(opath.join(os.getcwd(), "data/simulations/"))
