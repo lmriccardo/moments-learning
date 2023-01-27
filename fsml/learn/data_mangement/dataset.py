@@ -6,7 +6,7 @@ import fsml.utils as utils
 import os.path as opath
 
 
-class SimulationDataset(Dataset):
+class FSMLDataset(Dataset):
     r"""
     This class represent a :class:`SimulationDataset`. 
 
@@ -57,7 +57,7 @@ class SimulationDataset(Dataset):
                           with the simulation results. Inside the
                           folder there are all the CSV files required.
         """
-        super(SimulationDataset, self).__init__()
+        super(FSMLDataset, self).__init__()
 
         self.data_path      = data_path  # The input folder with all the data
         self.num_samples    = 0          # Total number of simulations
@@ -88,7 +88,7 @@ class SimulationDataset(Dataset):
             # Now we need to post-process the CSV content
             sample_range = range(total_number_of_sample, total_number_of_sample + current_number_perfile)
             self.samples += current_csv_content.iloc[:, 1:].to_numpy().tolist()
-            params, outputs = SimulationDataset.__split(current_csv_content.columns)
+            params, outputs = FSMLDataset.__split(current_csv_content.columns)
             self.samples_param_output_dict.update({ sid : (params, outputs) for sid in sample_range })
 
             self.count_per_file[file] = current_number_perfile
