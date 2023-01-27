@@ -1,4 +1,4 @@
-from typing import Tuple, List, Generator, Union, Optional
+from typing import Tuple, List, Generator, Union, Optional, Callable
 import basico.biomodels as biomodels
 import matplotlib.pyplot as plt
 from basico import COPASI
@@ -498,3 +498,62 @@ def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -
 
     norm_df = pd.DataFrame(data, columns=["time"] + vars)
     return norm_df
+
+
+# -----------------------------------------------------------------------------
+# Dataset and Dataloader Utilities
+# -----------------------------------------------------------------------------
+
+def count_folder_elements(
+        path: str, condition: Callable[[str], bool] = lambda x: True
+) -> Tuple[int, List[str]]:
+    """
+    Given the absolute path to a folder count the total
+    number of files, folder and all the other types of
+    possible content inside that folder. Notice that
+    this counting operation can be altered given as input
+    also a condition that each element should satisfy,
+    for example: that element is a file or a folder, etc.
+
+    :param path     : A fully qualified path to a folder
+    :param condition: The condition to apply at each element
+    :return: The number of element satisfing that condition
+    """
+    absolute_path = opath.abspath(path)
+
+    # Check that the input path is actually a folder
+    assert opath.isdir(absolute_path), \
+        f"[!!!] ERROR: The input path <{path}> must be a Folder"
+    
+    number_of_elements = 0
+    folder_content = []
+    for element in os.listdir(absolute_path):
+
+        # Check if the condition is satisfied
+        element = opath.join(absolute_path, element)
+        if condition(element):
+            number_of_elements += 1
+            folder_content.append(opath.join(absolute_path, element))
+    
+    return number_of_elements, folder_content
+
+
+def count_csv_rows(csv_path: str) -> Tuple[int, pd.DataFrame]:
+    """
+    Given a CSV file as input, it counts the number of
+    rows of the file. Obvioulsy not of the file itself,
+    but only of the matrix. Essentially, we do not
+    consider the header.
+
+    :param csv_path: the fully qualified path to the CSV file
+    :return: the number of elements of the CSV and the CSV content
+    """
+    absolute_csv_path = opath.abspath(csv_path)
+
+    # Check that the input path actually exists
+    assert opath.exists(absolute_csv_path), \
+        f"[!!!] ERROR: The input path <{absolute_csv_path}> must EXISTS"
+
+    csv_df = pd.read_csv(absolute_csv_path)
+    np_csv_df = csv_df.iloc[:, :].to_numpy()
+    return np_csv_df.shape[0], csv_df

@@ -77,16 +77,16 @@ def __transform_and_simulate(**kwargs: Dict[str, any]) -> None:
 
 
 def main() -> None:
-    argument_parser = argparse.ArgumentParser()
-    argument_parser.add_argument("simulate", help="Flag that if sets to True then ")
+    # argument_parser = argparse.ArgumentParser()
+    # argument_parser.add_argument("simulate", help="Flag that if sets to True then ")
 
-    log_dir = opath.abspath(opath.join(os.getcwd(), "log"))
-    output_dir = opath.abspath(opath.join(os.getcwd(), "runs"))
-    data_dir = opath.abspath(opath.join(os.getcwd(), "data/simulations/"))
-    prefix_path = opath.abspath(opath.join(os.getcwd(), "tests"))
-    paths_file = opath.abspath(opath.join(os.getcwd(), "data/paths.txt"))
+    log_dir     = opath.join(os.getcwd(), "log")
+    output_dir  = opath.join(os.getcwd(), "runs")
+    data_dir    = opath.join(os.getcwd(), "data/simulations/")
+    prefix_path = opath.join(os.getcwd(), "tests")
+    paths_file  = opath.join(os.getcwd(), "data/paths.txt")
 
-    nmodels = 1
+    nmodels = 3
     nsim_per_model = 10
 
     utils.setup_seed()

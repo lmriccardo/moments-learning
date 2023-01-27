@@ -14,7 +14,7 @@ import pandas as pd
 # -----------------------------------------------------------------------------
 
 def generate_taskid(model_name: str, count: int) -> str:
-    """
+    r"""
     Generate a new task ID. The ID is in the following format:
     <hour><min><sec>-<number>-<filename>, where all the component
     are in Hexadecimal form. <number> is an integer that is 
@@ -40,7 +40,7 @@ def create_report(datamodel     : co.CDataModel,
                   task_id       : str, 
                   out_stype     : str, 
                   fixed_species : bool=False) -> co.CReportDefinition:
-    """
+    r"""
     Function to create a report definition which will contain all the
     information (i.e. time step and species values) from a time-course
     simulation. The report will have N + 1 columns, where N is equal to
@@ -123,7 +123,7 @@ def create_report(datamodel     : co.CDataModel,
 
 @dataclass(frozen=True)
 class TaskConfiguration:
-    """
+    r"""
     This Python dataclass is used the represent a COPASI trajectory task configuration.
     A Trajectory task configuration is used to set the value for the simulation
     step number, the simulation initial time, the horizon, absolute and relative tolerances ...
@@ -167,7 +167,7 @@ class TaskConfiguration:
 
 
 def generate_default_configuration() -> TaskConfiguration:
-    """
+    r"""
     Generate a default configuration for the Trajectory Task.
     The default configuration is the following:
 
@@ -199,7 +199,7 @@ def generate_default_configuration() -> TaskConfiguration:
 
 
 class TrajectoryTask:
-    """
+    r"""
     A class used to represent a COPASI Trajectory Task. Each taks is independent
     from the others and can be identified by an appropriate Task ID. With this class
     the user can setup a Trajectory Task, initialize all the parameters like
@@ -262,7 +262,7 @@ class TrajectoryTask:
                        job        : int, # The Job Number
                        nsim       : int  # The total number of different simulations to run
     ) -> None:
-        """
+        r"""
         :param datamodel : a handle to the COPASI Data model
         :param log_dir   : The path where to store the log files
         :param output_dir: The path where to store the output and the dense output
@@ -373,7 +373,7 @@ class TrajectoryTask:
         self.datamodel = model.getObjectDataModel()
 
     def print_informations(self) -> None:
-        """
+        r"""
         Print all the useful information about the input model
         into two files `<log_path>\<filename>_species.csv` and
         `<log_path>\<filename>_parameters.csv`. The stored
@@ -394,7 +394,7 @@ class TrajectoryTask:
         utils.print_parameters(model_handler, params_path)
 
     def setup_task(self, conf: TaskConfiguration) -> None:
-        """
+        r"""
         Setup different options for the trajectory task.
 
         :param conf: the configuration to be applied
@@ -437,7 +437,7 @@ class TrajectoryTask:
         self.datamodel.getModel().setInitialTime(conf.initial_time)
 
     def print_results(self) -> None:
-        """
+        r"""
         This method prints the final result of the simulation to
         the output file. The output file is identified by the task ID
         with an _res suffix. The file will be stored in the output
@@ -469,7 +469,7 @@ class TrajectoryTask:
         return
     
     def run_task(self) -> bool:
-        """
+        r"""
         Run a Time-Course simulation with COPASI and returns TRUE
         If no error occurred, otherwise it returns False.
 
@@ -492,7 +492,7 @@ class TrajectoryTask:
             return False
 
     def run(self, conf: TaskConfiguration) -> None:
-        """
+        r"""
         Run the trajectory task
 
         :param conf: the Trajectory Task Configuration
@@ -561,7 +561,7 @@ class TrajectoryTask:
 
 
 def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]=None) -> None:
-    """
+    r"""
     Takes as input the Trajectory Task that has been runned
     and generate a new file CSV in the data folder such that
     each row is a simulation and columns are divided as follow:
@@ -643,9 +643,9 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     data_df.to_csv(data_file)
 
     # Remove the report and res file
-    # for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
-    #     if opath.exists(report_file): os.remove(report_file)
-    #     if opath.exists(res_file): os.remove(res_file)
+    for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
+        if opath.exists(report_file): os.remove(report_file)
+        if opath.exists(res_file): os.remove(res_file)
 
 
 # -----------------------------------------------------------------------------
@@ -655,7 +655,7 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 def run_one(
     model_path: str, log_dir: str, output_dir: str, data_dir: str, job_id: int, nsim: int
 ) -> None:
-    """
+    r"""
     Run `nsim` simulation for the single input model
 
     :param model_path: the absolute path to the SBML
@@ -682,7 +682,7 @@ def run_one(
 def run_simulations(
     paths_file: str, log_dir: str, output_dir: str,  data_dir: str, nsim_per_model: int = 100
 ) -> None:
-    """
+    r"""
     Run `nsim_per_model` simulations per each model belonging to the paths file
     where the paths file is a path that in each line contains the
     fully qualified path to the SBML of that model.
