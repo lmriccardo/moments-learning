@@ -2,11 +2,13 @@ import torch
 from torch.utils.data import DataLoader
 
 from fsml.learn.data_mangement.dataset import FSMLDataset
-from typing import Optional, List, Generic, Tuple, _T, Iterator
+from typing import Optional, List, Generic, Tuple, Iterator
+
+from . import T
 
 
-def collate(_batch: Generic[_T]) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
-    """
+def collate(_batch: Generic[T]) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+    r"""
     A function that replace the default collate function of the DataLoader.
     This function takes as input a batch of any size and creates two lists.
     The first list will contain all the input element of the batch, while
@@ -26,7 +28,7 @@ def collate(_batch: Generic[_T]) -> Tuple[List[torch.Tensor], List[torch.Tensor]
 
 
 class FSMLDataLoader(DataLoader):
-    """ Just a custom dataloader for our dataset """
+    r""" Just a custom dataloader for our dataset """
     def __init__(self, dataset      : FSMLDataset, 
                        batch_size   : int  = 1,
                        shuffle      : bool = True,

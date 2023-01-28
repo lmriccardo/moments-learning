@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 
 from typing import Tuple, Iterable, List, Generator
@@ -65,6 +66,7 @@ class FSMLDataset(Dataset):
         self.num_files      = 0          # Total number of files
         self.files          = []         # A list with all the files
         self.samples        = []         # A list that contains all the sample from all the files
+        self.max_parameters = 0          # The maximum number of parameters in the dataset
         
         # Now I define a mapping that for each sample, maps the
         # ID of the sample to the corresponding tuple (input, output)
@@ -89,6 +91,11 @@ class FSMLDataset(Dataset):
             sample_range = range(total_number_of_sample, total_number_of_sample + current_number_perfile)
             self.samples += current_csv_content.iloc[:, 1:].to_numpy().tolist()
             params, outputs = FSMLDataset.__split(current_csv_content.columns)
+
+            # Compute the length of the parameters and update the maximum parameters
+            if (num_params := len(params)) > self.max_parameters:
+                self.max_parameters = num_params
+
             self.samples_param_output_dict.update({ sid : (params, outputs) for sid in sample_range })
 
             self.count_per_file[file] = current_number_perfile
@@ -102,10 +109,11 @@ class FSMLDataset(Dataset):
 
     def __repr__(self) -> str:
         """ Return a string representation of the dataset """
-        return f"{self.__class__.__name__}(\n"             + \
-               f"  data_folder={self.data_path},\n"        + \
-               f"  num_files={self.num_files},\n"          + \
-               f"  total_num_samples={self.num_samples}\n" + \
+        return f"{self.__class__.__name__}(\n"                 + \
+               f"  data_folder={self.data_path},\n"            + \
+               f"  num_files={self.num_files},\n"              + \
+               f"  total_num_samples={self.num_samples},\n"    + \
+               f"  maximum_parameters={self.max_parameters}\n" + \
                ")"
     
     @staticmethod
@@ -135,7 +143,15 @@ class FSMLDataset(Dataset):
         input_data  = current_data[:params_len]
         output_data = current_data[params_len:params_len + outputs_len]
 
-        return torch.tensor(input_data), torch.tensor(output_data)
+        # Create tensors for input data and output data
+        tensor_input_data = torch.tensor(input_data)
+        tensor_output_data = torch.tensor(output_data)
+
+        # zero pad the input tensor for create a fixed length sample
+        pad_number = self.max_parameters - params_len
+        tensor_input_data = nn.functional.pad(tensor_input_data, pad=(0, pad_number))
+
+        return tensor_input_data, tensor_output_data
 
     def __iter__(self) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
         """ Iterate all the dataset and generate one sample at a time """

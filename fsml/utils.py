@@ -81,6 +81,21 @@ def print_errors(doc: libsbml.SBMLDocument, nerrors: int) -> None:
     exit(Errors.XML_READ_ERROR)
 
 
+def handle_sbml_errors(document: libsbml.SBMLDocument, result: int) -> None:
+    r"""
+    Takes as input an integer that represent the output
+    code from a SBML function. If the code is different
+    from `libsbml.LIBSBML_OPERATION_SUCCESS` than print
+    all the errors and raise a ValueError exception.
+
+    :param document: a handle to the SBML document
+    :param result  : the output code
+    :return:
+    """
+    if result != libsbml.LIBSBML_OPERATION_SUCCESS:
+        print_errors(document, document.getNumErrors())
+
+
 def load_sbml(sbmlpath: str) -> libsbml.SBMLDocument:
     """
     Given an SBML file with the absolute path load the file as an SBML document
@@ -454,7 +469,7 @@ def get_mean_std(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
     return description.loc[["mean", "std"], vars]
 
 
-def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -> pd.DataFrame:
+def normalize(points: pd.DataFrame, vars: List[str], model: co.CModel, ntype: str="statistical") -> pd.DataFrame:
     """
     Normalize each point (pointed by vars) in the input dataframe
     with the usual formula: z = (x - mean) / std. Then return
@@ -465,8 +480,9 @@ def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -
     difference between the max and the min. 
 
     :param points: a pandas DataFrame with the points
-    :param vars: a list of variable's name
-    :param ntype: (optional) normalization type "statistical" or "classical"
+    :param vars  : a list of variable's name
+    :param model : a handle to the COPASI Model
+    :param ntype : (optional) normalization type "statistical" or "classical"
     :return: the normalized dataframe
     """
     # First obtain the mean and the std deviation for each input variable

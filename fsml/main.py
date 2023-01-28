@@ -86,7 +86,7 @@ def main() -> None:
     prefix_path = opath.join(os.getcwd(), "tests")
     paths_file  = opath.join(os.getcwd(), "data/paths.txt")
 
-    nmodels = 3
+    nmodels = 10
     nsim_per_model = 10
 
     utils.setup_seed()

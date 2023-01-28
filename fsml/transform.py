@@ -26,6 +26,71 @@ def sbml_to_raterules(document: libsbml.SBMLDocument) -> libsbml.SBMLDocument:
     return document
 
 
+def add_amount_species(document: libsbml.SBMLDocument) -> None:
+    """
+    Given a :class:`libsbml.SBMLDocument` object that describe
+    the current loaded SBML model, add to the species list a
+    number of new species such that each of the new specie 
+    represent the amount (or particle number) value of the already
+    existing species. That is, given a model with N species, we
+    add N more species such that given an existing specie `s_i`
+    the new one will be `s_i_amount`.
+
+    Then for each of the N new species, we need to add a new 
+    assignment rules that map the new specie to the product
+    `s_i / compartment`.
+
+    :param document: A handle to the SBML Document
+    :return:
+    """
+    # First take the corresponding model of the document
+    sbml_model: libsbml.Model = document.getModel()
+
+    # Before adding the new species we need to add
+    # a new compartment with size 1 to be mapped
+    # to all the newly added species
+    new_compartment_name = "amount_specie_compartment"
+    new_compartment: libsbml.Compartment = sbml_model.createCompartment()
+    utils.handle_sbml_errors(document, new_compartment.setName(new_compartment_name))
+    utils.handle_sbml_errors(document, new_compartment.setId(new_compartment_name))
+    utils.handle_sbml_errors(document, new_compartment.setSize(1.0))
+    utils.handle_sbml_errors(document, sbml_model.addCompartment(new_compartment))
+
+    # Iterate all the species
+    number_of_species = sbml_model.getNumSpecies()
+    for current_specie in range(number_of_species):
+        # Craft the new name and create the new specie
+        current_specie_obj: libsbml.Species = sbml_model.getSpecies(current_specie)
+        current_specie_name = current_specie_obj.getId()
+        current_specie_amount_name = f"{current_specie_name}_amount"
+        current_specie_amount: libsbml.Species = sbml_model.createSpecies()
+        utils.handle_sbml_errors(document, current_specie_amount.setName(current_specie_amount_name))
+        utils.handle_sbml_errors(document, current_specie_amount.setId(current_specie_amount_name))
+        utils.handle_sbml_errors(document, current_specie_amount.setCompartment(new_compartment))
+        utils.handle_sbml_errors(document, current_specie_amount.setHasOnlySubstanceUnits(True))
+        utils.handle_sbml_errors(document, current_specie_amount.setConstant(False))
+        utils.handle_sbml_errors(document, sbml_model.addSpecies(current_specie_amount))
+
+        # Then get the compartment of the current specie
+        current_compartment = current_specie_obj.getCompartment()
+        current_compartment_name = current_compartment.getId()
+
+        # Now we need to add the corresponding assignment rule
+        mathXML = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">" + \
+                  "    <apply>"                                         + \
+                  "        <divide/>"                                   + \
+                 f"        <ci>{current_specie_name}</ci>"              + \
+                 f"        <ci>{current_compartment_name}</ci>"         + \
+                  "    </apply>"                                        + \
+                  "</math>"
+        
+        mathml_astnode = libsbml.readMathMLFromString(mathXML)
+        amount_ass_rule: libsbml.AssignmentRule = sbml_model.createAssignmentRule()
+        utils.handle_sbml_errors(document, amount_ass_rule.setVariable(current_specie_amount_name))
+        utils.handle_sbml_errors(document, amount_ass_rule.setMath(mathml_astnode))
+        utils.handle_sbml_errors(document, sbml_model.addRule(amount_ass_rule))
+
+
 def transform(sbmlfile: str, outputfile: str) -> None:
     """
     Load the model, transform the model and finally save the modified model.
@@ -39,6 +104,9 @@ def transform(sbmlfile: str, outputfile: str) -> None:
 
     # Convert all reaction to rate rules
     document = sbml_to_raterules(document)
+
+    # Add amount species for all the species
+    add_amount_species(document)
 
     # Get the handler to the SBML Model
     model = document.getModel()
