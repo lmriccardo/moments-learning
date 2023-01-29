@@ -78,7 +78,7 @@ def print_errors(doc: libsbml.SBMLDocument, nerrors: int) -> None:
             error_severity, error_message
         ))
 
-    exit(Errors.XML_READ_ERROR)
+    return
 
 
 def handle_sbml_errors(document: libsbml.SBMLDocument, result: int) -> None:
@@ -94,6 +94,7 @@ def handle_sbml_errors(document: libsbml.SBMLDocument, result: int) -> None:
     """
     if result != libsbml.LIBSBML_OPERATION_SUCCESS:
         print_errors(document, document.getNumErrors())
+        raise ValueError()
 
 
 def load_sbml(sbmlpath: str) -> libsbml.SBMLDocument:
@@ -469,7 +470,7 @@ def get_mean_std(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
     return description.loc[["mean", "std"], vars]
 
 
-def normalize(points: pd.DataFrame, vars: List[str], model: co.CModel, ntype: str="statistical") -> pd.DataFrame:
+def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -> pd.DataFrame:
     """
     Normalize each point (pointed by vars) in the input dataframe
     with the usual formula: z = (x - mean) / std. Then return

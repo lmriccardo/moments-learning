@@ -1,7 +1,6 @@
 from multiprocessing import Pool
 import fsml.utils as utils
 from typing import List
-import os.path as opath
 import libsbml
 import os
 
@@ -16,14 +15,15 @@ def sbml_to_raterules(document: libsbml.SBMLDocument) -> libsbml.SBMLDocument:
     :param document: a handler to the SBML document
     :return:
     """
-    conv_properties = libsbml.ConversionProperties()
-    conv_properties.addOption("replaceReactions")
-    conversion_result = document.convert(conv_properties)
-    if conversion_result != libsbml.LIBSBML_OPERATION_SUCCESS:
-        utils.print_errors(document, document.getNumErrors())
-        exit(utils.Errors.CONVERSION_ERROR)
+    try:
+
+        conv_properties = libsbml.ConversionProperties()
+        conv_properties.addOption("replaceReactions")
+        utils.handle_sbml_errors(document, document.convert(conv_properties))
+        return document
     
-    return document
+    except ValueError:
+        exit(utils.Errors.CONVERSION_ERROR)
 
 
 def add_amount_species(document: libsbml.SBMLDocument) -> None:
@@ -43,52 +43,66 @@ def add_amount_species(document: libsbml.SBMLDocument) -> None:
     :param document: A handle to the SBML Document
     :return:
     """
-    # First take the corresponding model of the document
-    sbml_model: libsbml.Model = document.getModel()
+    try:
+        # First take the corresponding model of the document
+        sbml_model: libsbml.Model = document.getModel()
 
-    # Before adding the new species we need to add
-    # a new compartment with size 1 to be mapped
-    # to all the newly added species
-    new_compartment_name = "amount_specie_compartment"
-    new_compartment: libsbml.Compartment = sbml_model.createCompartment()
-    utils.handle_sbml_errors(document, new_compartment.setName(new_compartment_name))
-    utils.handle_sbml_errors(document, new_compartment.setId(new_compartment_name))
-    utils.handle_sbml_errors(document, new_compartment.setSize(1.0))
-    utils.handle_sbml_errors(document, sbml_model.addCompartment(new_compartment))
+        # Before adding the new species we need to add
+        # a new compartment with size 1 to be mapped
+        # to all the newly added species
+        new_compartment_name = "amount_specie_compartment"
+        new_compartment: libsbml.Compartment = sbml_model.createCompartment()
+        utils.handle_sbml_errors(document, new_compartment.setName(new_compartment_name))
+        utils.handle_sbml_errors(document, new_compartment.setId(new_compartment_name))
+        utils.handle_sbml_errors(document, new_compartment.setSize(1.0))
 
-    # Iterate all the species
-    number_of_species = sbml_model.getNumSpecies()
-    for current_specie in range(number_of_species):
-        # Craft the new name and create the new specie
-        current_specie_obj: libsbml.Species = sbml_model.getSpecies(current_specie)
-        current_specie_name = current_specie_obj.getId()
-        current_specie_amount_name = f"{current_specie_name}_amount"
-        current_specie_amount: libsbml.Species = sbml_model.createSpecies()
-        utils.handle_sbml_errors(document, current_specie_amount.setName(current_specie_amount_name))
-        utils.handle_sbml_errors(document, current_specie_amount.setId(current_specie_amount_name))
-        utils.handle_sbml_errors(document, current_specie_amount.setCompartment(new_compartment))
-        utils.handle_sbml_errors(document, current_specie_amount.setHasOnlySubstanceUnits(True))
-        utils.handle_sbml_errors(document, current_specie_amount.setConstant(False))
-        utils.handle_sbml_errors(document, sbml_model.addSpecies(current_specie_amount))
+        # Iterate all the species
+        number_of_species = sbml_model.getNumSpecies()
+        for current_specie in range(number_of_species):
+            # Craft the new name and create the new specie
+            current_specie_obj: libsbml.Species = sbml_model.getSpecies(current_specie)
+            current_specie_name = current_specie_obj.getId()
+            current_specie_amount_name = f"{current_specie_name}_amount"
+            current_specie_amount: libsbml.Species = sbml_model.createSpecies()
+            utils.handle_sbml_errors(document, current_specie_amount.setName(current_specie_amount_name))
+            utils.handle_sbml_errors(document, current_specie_amount.setId(current_specie_amount_name))
+            utils.handle_sbml_errors(document, current_specie_amount.setCompartment(new_compartment_name))
+            utils.handle_sbml_errors(document, current_specie_amount.setHasOnlySubstanceUnits(True))
+            utils.handle_sbml_errors(document, current_specie_amount.setConstant(False))
 
-        # Then get the compartment of the current specie
-        current_compartment = current_specie_obj.getCompartment()
-        current_compartment_name = current_compartment.getId()
+            # We need to set also the initial amount to the new specie
+            initial_amount = None
 
-        # Now we need to add the corresponding assignment rule
-        mathXML = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">" + \
-                  "    <apply>"                                         + \
-                  "        <divide/>"                                   + \
-                 f"        <ci>{current_specie_name}</ci>"              + \
-                 f"        <ci>{current_compartment_name}</ci>"         + \
-                  "    </apply>"                                        + \
-                  "</math>"
-        
-        mathml_astnode = libsbml.readMathMLFromString(mathXML)
-        amount_ass_rule: libsbml.AssignmentRule = sbml_model.createAssignmentRule()
-        utils.handle_sbml_errors(document, amount_ass_rule.setVariable(current_specie_amount_name))
-        utils.handle_sbml_errors(document, amount_ass_rule.setMath(mathml_astnode))
-        utils.handle_sbml_errors(document, sbml_model.addRule(amount_ass_rule))
+            if current_specie_obj.isSetInitialConcentration:
+                initial_amount = current_specie_obj.getInitialConcentration()
+                compartment_name = current_specie_obj.getCompartment()
+                compartment_obj = sbml_model.getElementBySId(compartment_name)
+                initial_amount = initial_amount / compartment_obj.getSize()
+
+            if current_specie_obj.isSetInitialAmount:
+                initial_amount = current_specie_obj.getInitialAmount()
+            
+            utils.handle_sbml_errors(document, current_specie_amount.setInitialAmount(initial_amount))
+
+            # Then get the compartment of the current specie
+            current_compartment_name = current_specie_obj.getCompartment()
+
+            # Now we need to add the corresponding assignment rule
+            mathXML = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">" + \
+                    "    <apply>"                                         + \
+                    "        <divide/>"                                   + \
+                    f"        <ci>{current_specie_name}</ci>"              + \
+                    f"        <ci>{current_compartment_name}</ci>"         + \
+                    "    </apply>"                                        + \
+                    "</math>"
+            
+            mathml_astnode = libsbml.readMathMLFromString(mathXML)
+            amount_ass_rule: libsbml.AssignmentRule = sbml_model.createAssignmentRule()
+            utils.handle_sbml_errors(document, amount_ass_rule.setVariable(current_specie_amount_name))
+            utils.handle_sbml_errors(document, amount_ass_rule.setMath(mathml_astnode))
+    
+    except ValueError:
+        exit(utils.Errors.CONVERSION_ERROR)
 
 
 def transform(sbmlfile: str, outputfile: str) -> None:
@@ -102,11 +116,11 @@ def transform(sbmlfile: str, outputfile: str) -> None:
     # Obtain the corresponding document
     document = utils.load_sbml(sbmlfile)
 
-    # Convert all reaction to rate rules
-    document = sbml_to_raterules(document)
-
     # Add amount species for all the species
     add_amount_species(document)
+
+    # Convert all reaction to rate rules
+    document = sbml_to_raterules(document)
 
     # Get the handler to the SBML Model
     model = document.getModel()
@@ -171,3 +185,12 @@ def convert_models(prefix_path: str, nmodels: int) -> List[str]:
             output_paths += trans_model_paths
     
     return output_paths
+
+
+if __name__ == "__main__":
+    # One conversion example
+    import os.path as opath
+    prefix_path = opath.join(os.getcwd(), "tests")
+    model_id = 0
+
+    convert_one(prefix_path, model_id)

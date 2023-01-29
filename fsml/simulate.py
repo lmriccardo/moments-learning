@@ -599,7 +599,7 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
         try:
             # Load the report and produce a DenseOutput DataFrame
             dense_output = utils.load_report(output_file)
-            variables = [x for x in dense_output.columns if x != "time"]
+            variables = [x for x in dense_output.columns if x != "time" and x.endswith("_amount")]
 
             # Compute the normalization and takes the mean and std for each variable
             class_normalization_variables = utils.normalize(dense_output, variables, ntype="classical")
