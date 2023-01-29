@@ -6,8 +6,8 @@ import os
 
 
 def iter_dataset():
-    data_dir = opath.join(os.getcwd(), "data/simulations/")
-    ds = dataset.FSMLDataset(data_dir)
+    data_dir = opath.join(os.getcwd(), "data/meanstd/")
+    ds = dataset.FSMLMeanStdDataset(data_dir)
     dl = dataloader.FSMLDataLoader(ds, 3, True)
     model = nets.FSMLSimpleNetwork(input_size=ds.max_parameters)
     for data in dl():

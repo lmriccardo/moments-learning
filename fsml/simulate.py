@@ -626,6 +626,7 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 
     # Load the results for each simulation as dictionaries of (normalized) values
     current_denseoutput_amount = None
+    current_denseoutput_header = None
     species_mean_std: Dict[str, List[float]] = dict()
     for output_file in trajectory_task.output_files:
 
@@ -635,8 +636,8 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
             variables = [x for x in dense_output.columns if x != "time" and x.endswith("_amount")]
 
             # Take the dense output of the amount species and the parameters
-            columns = list(parameters_list[0].keys()) + variables
-            dense_output_amount = utils.select_data(dense_output, columns)
+            current_denseoutput_header = ["time"] + list(parameters_list[0].keys()) + variables
+            dense_output_amount = utils.select_data(dense_output, current_denseoutput_header)
             current_denseoutput_amount = dense_output_amount.to_numpy() if current_denseoutput_amount is None \
                                             else np.vstack((
                                                 current_denseoutput_amount, dense_output_amount.to_numpy()))
@@ -686,7 +687,8 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     # Save the dense output amount
     denseoutput_filename = data_filename + "_DenseOutput.csv"
     denseoutput_file = opath.join(denseoutput_path, denseoutput_filename)
-    np.savetxt(denseoutput_file, current_denseoutput_amount, delimiter=',')
+    denseoutput_amount_df = pd.DataFrame(current_denseoutput_amount, columns=current_denseoutput_header)
+    denseoutput_amount_df.to_csv(denseoutput_file)
 
     # Remove the report and res file
     for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):

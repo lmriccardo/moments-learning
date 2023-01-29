@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 
-from fsml.learn.data_mangement.dataset import FSMLDataset
+from fsml.learn.data_mangement.dataset import FSMLMeanStdDataset
 from typing import Optional, List, Generic, Tuple, Iterator
 
 from . import T
@@ -29,7 +29,7 @@ def collate(_batch: Generic[T]) -> Tuple[List[torch.Tensor], List[torch.Tensor]]
 
 class FSMLDataLoader(DataLoader):
     r""" Just a custom dataloader for our dataset """
-    def __init__(self, dataset      : FSMLDataset, 
+    def __init__(self, dataset      : FSMLMeanStdDataset, 
                        batch_size   : int  = 1,
                        shuffle      : bool = True,
                        follow_batch : Optional[List[str]] = None,

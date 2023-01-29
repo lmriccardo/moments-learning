@@ -7,7 +7,7 @@ import fsml.utils as utils
 import os.path as opath
 
 
-class FSMLDataset(Dataset):
+class FSMLMeanStdDataset(Dataset):
     r"""
     This class represent a :class:`SimulationDataset`. 
 
@@ -58,7 +58,7 @@ class FSMLDataset(Dataset):
                           with the simulation results. Inside the
                           folder there are all the CSV files required.
         """
-        super(FSMLDataset, self).__init__()
+        super(FSMLMeanStdDataset, self).__init__()
 
         self.data_path      = data_path  # The input folder with all the data
         self.num_samples    = 0          # Total number of simulations
@@ -90,7 +90,7 @@ class FSMLDataset(Dataset):
             # Now we need to post-process the CSV content
             sample_range = range(total_number_of_sample, total_number_of_sample + current_number_perfile)
             self.samples += current_csv_content.iloc[:, 1:].to_numpy().tolist()
-            params, outputs = FSMLDataset.__split(current_csv_content.columns)
+            params, outputs = FSMLMeanStdDataset.__split(current_csv_content.columns)
 
             # Compute the length of the parameters and update the maximum parameters
             if (num_params := len(params)) > self.max_parameters:
@@ -157,3 +157,30 @@ class FSMLDataset(Dataset):
         """ Iterate all the dataset and generate one sample at a time """
         for sample_id in range(self.num_samples):
             yield self.__getitem__(sample_id)
+
+
+class FSMLOneStepAheadDataset(Dataset):
+    """ """
+    def __init__(self, data_path: str) -> None:
+        """
+        :param data_path: The fully qualified path to the data folder
+                          with all the dense output of the simulations.
+                          Inside the folder there should be all the file
+                          required for the dataset and the training.
+        """
+        super(FSMLOneStepAheadDataset, self).__init__()
+
+        self.data_path   = data_path  # The absolute path of the data folder with all the CSV files
+        self.input_data  = None       # The input data to the Neural Network
+        self.output_data = None       # The output data, i.e., the ground trouth
+        self.files       = []         # A list with all the files in the data folder
+        self.num_files   = 0          # The total number of files
+        self.num_samples = 0          # The total number of simulations
+
+    def __initialize_all(self) -> None:
+        """ Initialize all the fields of the class """
+        # First let's count the total number of files in the data folder
+        count_condition = lambda x: opath.isfile(x) and x.endswith(".csv")
+        self.num_files, self.files = utils.count_folder_elements(self.data_path, count_condition)
+
+        
