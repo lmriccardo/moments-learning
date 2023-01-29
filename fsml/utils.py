@@ -588,3 +588,17 @@ def count_csv_rows(csv_path: str) -> Tuple[int, pd.DataFrame]:
     csv_df = pd.read_csv(absolute_csv_path)
     np_csv_df = csv_df.iloc[:, :].to_numpy()
     return np_csv_df.shape[0], csv_df
+
+
+def find_indexes(df: pd.DataFrame, col_name: str="time", value: float=0.0) -> List[int]:
+    """
+    Given a Pandas dataframe returns a list of indexes such that
+    at each index the value of the input column `col_name`
+    is equal to the input value `reset_value`.
+
+    :param df      : the Pandas Dataframe
+    :param col_name: The name of the column to be checked
+    :param value   : The value to be checked
+    :return: a list of indexes
+    """
+    return df.index[df[col_name] == value].tolist()

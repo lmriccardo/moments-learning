@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 from typing import Tuple, Iterable, List, Generator
 import fsml.utils as utils
 import os.path as opath
+import pandas as pd
 
 
 class FSMLMeanStdDataset(Dataset):
@@ -171,11 +172,23 @@ class FSMLOneStepAheadDataset(Dataset):
         super(FSMLOneStepAheadDataset, self).__init__()
 
         self.data_path   = data_path  # The absolute path of the data folder with all the CSV files
-        self.input_data  = None       # The input data to the Neural Network
-        self.output_data = None       # The output data, i.e., the ground trouth
+        self.input_data  = []         # The input data to the Neural Network
+        self.output_data = []         # The output data, i.e., the ground trouth
         self.files       = []         # A list with all the files in the data folder
         self.num_files   = 0          # The total number of files
         self.num_samples = 0          # The total number of simulations
+        self.max_number  = 0          # the maximum lenght of the header overall CSV files
+
+        self.__initialize_all()
+
+    @staticmethod
+    def __split(columns: Iterable[str]) -> Tuple[List[str], List[str]]:
+        """ Split the input columns to find the parameters and the variables names """
+        # I have structured the data such that all the output variables
+        # are written in uppercase, and the parameters in lowercase.
+        parameters = [col for col in columns if col.islower() and col != "time"]
+        outputs    = [col for col in columns if col.endswith("_amount")]
+        return parameters, outputs
 
     def __initialize_all(self) -> None:
         """ Initialize all the fields of the class """
@@ -183,4 +196,66 @@ class FSMLOneStepAheadDataset(Dataset):
         count_condition = lambda x: opath.isfile(x) and x.endswith(".csv")
         self.num_files, self.files = utils.count_folder_elements(self.data_path, count_condition)
 
+        for file in self.files:
+            _, current_csv_content = utils.count_csv_rows(file)
+
+            # First we need to find where each simulation of the current
+            # model ends, essentially when the time columns is reset to 0
+            params, outputs = FSMLOneStepAheadDataset.__split(current_csv_content.columns)
+            
+            # Update the maximum size of features with which we will pad
+            if (tot_len := len(params) + len(outputs)) > self.max_number:
+                self.max_number = tot_len
+
+            variables = params + outputs
+            print(current_csv_content)
+
+            # Obtain the indexes where each time the time column is reset to 0
+            simulation_indexes = [0] + utils.find_indexes(current_csv_content)[1:]
+            simulation_indexes += [simulation_indexes[-1] + simulation_indexes[1]]
+            content_no_time = current_csv_content.loc[:, variables]
+            for start_index, end_index in zip(simulation_indexes[:-1], simulation_indexes[1:]):
+                self.input_data += content_no_time.iloc[start_index:end_index - 1, :].values.tolist()
+                self.output_data += content_no_time.loc[:, outputs].iloc[start_index + 1:end_index, :].values.tolist()
         
+        # Check that at the end input and output data have the same length
+        assert len(self.input_data) == len(self.output_data), \
+            "[!!!] ERROR: Input data List and Output Data list of different size: " + \
+           f"Input data Size {len(self.input_data)} - {len(self.output_data)} Output Data Size"
+
+        self.num_samples = len(self.input_data)
+
+    def __len__(self) -> int:
+        """ Return the length of the dataset """
+        return self.num_samples
+
+    def __repr__(self) -> str:
+        """ Return a string representation of the dataset """
+        return f"{self.__class__.__name__}(\n"                 + \
+               f"  data_folder={self.data_path},\n"            + \
+               f"  num_files={self.num_files},\n"              + \
+               f"  total_num_samples={self.num_samples},\n"    + \
+               f"  maximum_header_length={self.max_number}\n" + \
+               ")"
+    
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        """ Return the i-th data as a tuple of (parameters, means and std.) """
+        # First check that the index is in range
+        assert index < self.num_samples, \
+            f"[!!!] ERROR: Trying to address element at position {index} " + \
+            f"but only {self.num_samples} are available in the dataset"
+        
+        # First take the data (input and output)
+        x_data = torch.tensor(self.input_data[index])
+        y_data = torch.tensor(self.output_data[index])
+
+        # Then pad the input data with zeros
+        num_pad = self.max_number - x_data.shape[0]
+        x_data = nn.functional.pad(x_data, pad=(0, num_pad))
+
+        return x_data, y_data
+    
+    def __iter__(self) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
+        """ Iterate all the dataset and generate one sample at a time """
+        for sample_id in range(self.num_samples):
+            yield self.__getitem__(sample_id)
