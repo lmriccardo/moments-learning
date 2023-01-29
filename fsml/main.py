@@ -82,7 +82,7 @@ def main() -> None:
 
     log_dir     = opath.join(os.getcwd(), "log")
     output_dir  = opath.join(os.getcwd(), "runs")
-    data_dir    = opath.join(os.getcwd(), "data/simulations/")
+    data_dir    = opath.join(os.getcwd(), "data/")
     prefix_path = opath.join(os.getcwd(), "tests")
     paths_file  = opath.join(os.getcwd(), "data/paths.txt")
 

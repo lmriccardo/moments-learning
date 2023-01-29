@@ -385,9 +385,11 @@ def print_parameters(model: co.CModel, foutput: Optional[str]=None) -> None:
         param_value = param.getInitialValue() # Get the value of the parameter
         param_type = param.isFixed()          # True if the parameter is fixed, False otherwise
 
-        parameters.append(param_name)
-        types.append(param_type)
-        values.append(param_value)
+        # Take only fixed parameters
+        if param_type:
+            parameters.append(param_name)
+            types.append(param_type)
+            values.append(param_value)
 
     pandas_df_dict["Parameter"] = parameters
     pandas_df_dict["Type"] = types
@@ -455,6 +457,18 @@ def plot(points: pd.DataFrame, vars: List[str]) -> None:
 
     plt.legend(loc="upper right")
     plt.show()
+
+
+def select_data(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
+    """
+    Select all the points in the dataframe that matches the
+    names in the input `vars` list.
+
+    :param points: the dataframe with all the points
+    :param vars  : the name of the column to consider
+    :return: the selected points
+    """
+    return points.loc[:, vars]
 
 
 def get_mean_std(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:

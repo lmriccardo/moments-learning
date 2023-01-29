@@ -94,6 +94,27 @@ def create_report(datamodel     : co.CDataModel,
     body.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
     header.push_back(co.CRegisteredCommonName(co.CDataString("time").getCN().getString()))
     header.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+
+    # First add the FIXED parameters in the report
+    num_parameters = model.getNumModelValues()
+    for nparam in range(num_parameters):
+        parameter: co.CModelValue = model.getModelValue(nparam)
+
+        # Consider only FIXED quantities
+        if parameter.getStatus() != co.CModelEntity.Status_FIXED:
+            continue
+
+        body.push_back(
+            co.CRegisteredCommonName(
+                parameter.getObject(
+                    co.CCommonName(f"Reference=InitialValue")).getCN().getString()
+            ))
+    
+        header.push_back(co.CRegisteredCommonName(co.CDataString(parameter.getSBMLId()).getCN().getString()))
+        body.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+        header.push_back(co.CRegisteredCommonName(report.getSeparator().getCN().getString()))
+    
+    # Then add all the non-fixed species
     num_species = model.getNumMetabs()
     for nspecie in range(num_species):
         specie: co.CMetab = model.getMetabolite(nspecie)
@@ -357,6 +378,9 @@ class TrajectoryTask:
         number_of_parameters = hmodel.getNumModelValues()
         for nparam in range(number_of_parameters):
             current_parameter: co.CModelValue = hmodel.getModelValue(nparam)
+            if not current_parameter.isFixed():
+                continue
+
             new_parameter_value = param_dict[current_parameter.getObjectName()]
             current_parameter.setInitialValue(new_parameter_value)
             
@@ -577,22 +601,31 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     assert trajectory_task.runned, \
         f"<ERROR, Job {trajectory_task.job}> No simulation has been runned"
 
-    # Check if the data folder is either None or it does exists
-    if not data_path or not opath.exists(opath.abspath(data_path)):
+    simulation_path = opath.join(data_path, "meanstd")
+    denseoutput_path = opath.join(data_path, "denseoutputs")
 
-        try:
-            # If does not exists or it is not then create a new data folder
-            data_path = opath.join(os.getcwd(), "data/simulations")
-            os.mkdir(data_path)
-        except FileExistsError:
-            ... # Maybe the given path wasn't a full path
+    # If the data path is not given then let's create a custom data path
+    # for both the simulations and the dense output result
+    if not data_path:
+        simulation_path = opath.join(os.getcwd(), "data/meanstd")
+        denseoutput_path = opath.join(os.getcwd(), "dat/denseoutputs")
 
-    data_path = opath.abspath(data_path)
+    # If the final simulation path does not exists just create it 
+    if not opath.exists(simulation_path):
+        os.makedirs(simulation_path)
+
+    # If the final dense output path does not exists just create it 
+    if not opath.exists(denseoutput_path):
+        os.makedirs(denseoutput_path)
+
+    simulation_path = opath.abspath(simulation_path)
+    denseoutput_path = opath.abspath(denseoutput_path)
 
     # Obtain the parameter list
     parameters_list = trajectory_task.get_used_parameters()
 
     # Load the results for each simulation as dictionaries of (normalized) values
+    current_denseoutput_amount = None
     species_mean_std: Dict[str, List[float]] = dict()
     for output_file in trajectory_task.output_files:
 
@@ -600,6 +633,13 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
             # Load the report and produce a DenseOutput DataFrame
             dense_output = utils.load_report(output_file)
             variables = [x for x in dense_output.columns if x != "time" and x.endswith("_amount")]
+
+            # Take the dense output of the amount species and the parameters
+            columns = list(parameters_list[0].keys()) + variables
+            dense_output_amount = utils.select_data(dense_output, columns)
+            current_denseoutput_amount = dense_output_amount.to_numpy() if current_denseoutput_amount is None \
+                                            else np.vstack((
+                                                current_denseoutput_amount, dense_output_amount.to_numpy()))
 
             # Compute the normalization and takes the mean and std for each variable
             class_normalization_variables = utils.normalize(dense_output, variables, ntype="classical")
@@ -638,9 +678,15 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 
     # Craft the name of the data file that will contains the data
     delimiter = "\\" if sys.platform == "win32" else "/"
-    data_filename = bytes.fromhex(output_file.split("-")[0].split(delimiter)[-1]).decode("ASCII") + ".csv"
-    data_file = opath.join(data_path, data_filename)
+    data_filename = bytes.fromhex(output_file.split("-")[0].split(delimiter)[-1]).decode("ASCII")
+    simulation_filename = data_filename + "_MeanStd.csv"
+    data_file = opath.join(simulation_path, simulation_filename)
     data_df.to_csv(data_file)
+
+    # Save the dense output amount
+    denseoutput_filename = data_filename + "_DenseOutput.csv"
+    denseoutput_file = opath.join(denseoutput_path, denseoutput_filename)
+    np.savetxt(denseoutput_file, current_denseoutput_amount, delimiter=',')
 
     # Remove the report and res file
     for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
