@@ -18,9 +18,9 @@ def iter_dataset():
     data_dir = opath.join(os.getcwd(), "data/denseoutputs/")
     denseoutput_ds = dataset.FSMLOneStepAheadDataset(data_dir)
     for x_data, y_data in denseoutput_ds:
-        # print(x_data, y_data)
-        # print()
-        ...
+        print(x_data, y_data)
+        print()
+        break
 
 
 if __name__ == "__main__":

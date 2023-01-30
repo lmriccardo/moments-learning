@@ -202,56 +202,9 @@ def to_string(vector: Union[np.ndarray, List[float]]) -> str:
     return " ".join(list(map(str, vector)))
 
 
-def get_parameter_combinations(params: List[float], n_sample: int=-1) -> Generator[List[float], None, None]:
-    """
-    Generate each time a combination of all the parameters (in order)
-    such that each parameter is transformed like p_value * 10 ** (-x)
-    where x is a value between 1 and 10. Moreover before generating
-    all the combinations, all the parameters are scaled as values
-    betwee 0 and 1 using `to_integral` function.
-
-    It is possible to decide how many sample we would like the
-    function to generate. The default value is -1, and in this case
-    the number of generated samples is exactly p_len ** 10 // 2. 
-
-    :param params:   The input vectors with all the parameters of the model
-    :param n_sample: The number of samples that we want to generate
-    :return: A generator that generate each time a sample
-    """
-    # Initialize the matrix with all the parameters already modified
-    params = to_integral(params)
-    np_param_matrix = np.array([params] * 10).T
-    modifiers = np.array([[1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]])
-    path_matrix = np_param_matrix * modifiers
-
-    # Initialize variables for the generation
-    taken_combinations = dict()
-    max_row_count = path_matrix.shape[0]
-    current_sample_number = 0
-
-    # Take the maximum number of possible combinations
-    # that is exactly the number of columns power the
-    # lenght of the combination. In practice we take the
-    # 50% of the sample, otherwise there will be high
-    if n_sample == -1:
-        n_sample = path_matrix.shape[1] ** path_matrix.shape[0]
-        n_sample = n_sample // 2
-
-    while current_sample_number < n_sample:
-
-        current_combination = []
-        for current_row_index in range(0, max_row_count):
-            current_row = path_matrix[current_row_index, :]
-            chosen_value = np.random.choice(current_row)
-            current_combination.append(chosen_value.item())
-        
-        current_combination_str = to_string(current_combination)
-        if not current_combination_str in taken_combinations:
-            taken_combinations[current_combination_str] = True
-            current_sample_number += 1
-            yield current_combination
-    
-    return
+def compute_percent(params: np.ndarray, percentage: float=50.0) -> np.ndarray:
+    """ Compute the input percentage of the input array """
+    return params * percentage / 100
 
 
 # -----------------------------------------------------------------------------

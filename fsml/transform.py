@@ -117,7 +117,7 @@ def transform(sbmlfile: str, outputfile: str) -> None:
     document = utils.load_sbml(sbmlfile)
 
     # Add amount species for all the species
-    add_amount_species(document)
+    # add_amount_species(document)
 
     # Convert all reaction to rate rules
     document = sbml_to_raterules(document)

@@ -208,7 +208,6 @@ class FSMLOneStepAheadDataset(Dataset):
                 self.max_number = tot_len
 
             variables = params + outputs
-            print(current_csv_content)
 
             # Obtain the indexes where each time the time column is reset to 0
             simulation_indexes = [0] + utils.find_indexes(current_csv_content)[1:]

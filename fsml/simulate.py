@@ -56,7 +56,7 @@ def create_report(datamodel     : co.CDataModel,
     :param fixed_species: if in the output we want to put also FIXED value species.
     :return: the report definition
     """
-    assert out_stype.capitalize() in ["Concentration", "Amount"], \
+    assert out_stype in ["Concentration", "ParticleNumber"], \
         f"<ERROR, Task ID: {task_id}> In Create Report given output Specie Type {out_stype}.\n" + \
          "\tInstead specify one among: Concentration (or concentration), Amount (or amount)"
 
@@ -128,11 +128,11 @@ def create_report(datamodel     : co.CDataModel,
         body.push_back(
             co.CRegisteredCommonName(
                 specie.getObject(
-                    co.CCommonName(f"Reference={out_stype.capitalize()}")).getCN().getString()
+                    co.CCommonName(f"Reference={out_stype}")).getCN().getString()
             ))
         
         # Add the corresponding ID to the header
-        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId()).getCN().getString()))
+        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId() + "_amount").getCN().getString()))
 
         # After each entry we need a separator
         if nspecie != num_species - 1:
@@ -214,9 +214,114 @@ def generate_default_configuration() -> TaskConfiguration:
         output_event         = False,
         abs_tolerance        = 1.0e-09,
         rel_tolerance        = 1.0e-09,
-        report_out_stype     = "Concentration",
+        report_out_stype     = "ParticleNumber",
         report_fixed_species = True
     )
+
+
+@dataclass()
+class ParameterSamplerConfiguration:
+    r""" Just a configuration class for the :class:`ParameterSampler` """
+    total_number_of_sample : int    # Total number of sample to generate
+    percentage_of_change   : float  # Percentage of change for each parameter
+    total_sample_per_param : int    # Total number of sample per-parameter
+
+
+def generate_default_param_sampler_configuration() -> ParameterSamplerConfiguration:
+    r""" Generate a default configuration for the :class:`ParameterSampler` """
+    return ParameterSamplerConfiguration(
+        total_number_of_sample=10,
+        percentage_of_change=50.0,
+        total_sample_per_param=100
+    )
+
+
+class ParameterSampler:
+    r"""A class for parameter sampling. 
+
+    The goal is to generate each time a combination of all the parameters (in order)
+    such that each parameter is transformed in according what's written 
+    below. All the generated combinations are unique. A combination is generated 
+    using a random walk on the matrix starting from the first row, picking an element
+    at random and then going down in the remaining rows. 
+
+    Given the list of parameters as input, let `N` be the size of the list, it returns
+    a matrix of `N` rows times `nchange_per_param + 1` columns such that at each rows
+    corresponds the vector of possible changes for the single parameter. That is, each
+    row is a row vector of size `nchange_per_param + 1`, where the first element is 
+    the original value of the corresponding parameter and all the other columns
+    contains a random value. The random value is sampled from a Ball of radius exactly
+    the `perc`% of the original value centered on the parameter. 
+
+    Attributes
+    ----------
+    params : np.ndarray
+        The vector with all the parameters
+    conf : ParameterSamplerConfiguration
+        The configuration for the sampler
+
+    Methods
+    -------
+    generate(self) -> Generator[np.ndarray, None, None]
+        Generate the actual sampling
+    """
+    def __init__(self, params: List[float], param_conf: ParameterSamplerConfiguration) -> None:
+        """ Just the constructor """
+        self.params = np.array(params).astype('float32') # The list with all the parameters value
+        self.conf   = param_conf                         # The configuration for the sampler
+
+    def _gen_parameter_matrix(self) -> np.ndarray:
+        """ Generate the matrix for the sampling """
+        # First compute the percentages of change for each parameter
+        param_percent_vector = utils.compute_percent(self.params, self.conf.percentage_of_change)
+
+        # Then create the matrix with all the possible samples for each parameter
+        parameter_matrix = []
+        for param, param_perc in zip(self.params, param_percent_vector):
+            parameter_matrix.append(
+                np.random.uniform((param - param_perc), 
+                                  (param + param_perc), 
+                                  size=(self.conf.total_sample_per_param)
+                ).tolist())
+            
+        parameter_matrix = np.array(parameter_matrix).astype('float32')
+        final_matrix = np.hstack((self.params.reshape(-1, 1), parameter_matrix))
+        return final_matrix
+
+    def generate(self) -> Generator[np.ndarray, None, None]:
+        """ Generate the actual sampling """
+        # Initialize the matrix with all the parameters already modified
+        path_matrix = self._gen_parameter_matrix()
+
+        # Initialize variables for the generation
+        taken_combinations = dict()
+        max_row_count = path_matrix.shape[0]
+        current_sample_number = 0
+
+        # Take the maximum number of possible combinations
+        # that is exactly the number of columns power the
+        # lenght of the combination. In practice we take the
+        # 50% of the sample, otherwise there will be high
+        n_sample = self.conf.total_number_of_sample
+        if n_sample == -1:
+            n_sample = path_matrix.shape[1] ** path_matrix.shape[0]
+            n_sample = n_sample // 2
+
+        while current_sample_number < n_sample:
+
+            current_combination = []
+            for current_row_index in range(0, max_row_count):
+                current_row = path_matrix[current_row_index, :]
+                chosen_value = np.random.choice(current_row)
+                current_combination.append(chosen_value.item())
+            
+            current_combination_str = utils.to_string(current_combination)
+            if not current_combination_str in taken_combinations:
+                taken_combinations[current_combination_str] = True
+                current_sample_number += 1
+                yield current_combination
+        
+        return
 
 
 class TrajectoryTask:
@@ -254,6 +359,8 @@ class TrajectoryTask:
         A List containing mapping from parameters name and parameter values
     runned : bool
         If the trajectory task has been runned or not
+    psampler_conf : ParameterSamplerConfiguration
+        The configurator for the ParameterSampler
 
     Methods
     -------
@@ -276,12 +383,13 @@ class TrajectoryTask:
         Print the result of the simulation to the output file
     """
 
-    def __init__(self, model_file : str, # A handle to the data model
-                       log_dir    : str, # The path where to store the log file
-                       output_dir : str, # The path where to store the output and the dense output
-                       filename   : str, # The model filename (without the extension)
-                       job        : int, # The Job Number
-                       nsim       : int  # The total number of different simulations to run
+    def __init__(self, model_file : str,                          # A handle to the data model
+                       log_dir    : str,                          # The path where to store the log file
+                       output_dir : str,                          # The path where to store the output and the dense output
+                       filename   : str,                          # The model filename (without the extension)
+                       job        : int,                          # The Job Number
+                       nsim       : int,                          # The total number of different simulations to run
+                       param_conf : ParameterSamplerConfiguration # The configurator for the ParameterSampler
     ) -> None:
         r"""
         :param datamodel : a handle to the COPASI Data model
@@ -302,6 +410,8 @@ class TrajectoryTask:
         self.filename = filename
         self.job = job
         self.num_simulations = nsim
+        self.psampler_conf = param_conf
+        self.psampler_conf.total_number_of_sample = self.num_simulations
 
         self.output_file = None
         self.res_file = None
@@ -364,9 +474,12 @@ class TrajectoryTask:
 
         # Extract also the parameter names in a list
         parameter_names_list = list(parameter_dictionary.keys())
+
+        # Create the parameter sampler
+        parameter_sampler = ParameterSampler(parameter_values_list, self.psampler_conf)
         
         # Start with the generation
-        for params_list in utils.get_parameter_combinations(parameter_values_list, n_sample=self.num_simulations):
+        for params_list in parameter_sampler.generate():
             yield dict(zip(parameter_names_list, params_list))
     
     def _change_parameter_values(self, param_dict: Dict[str, float]) -> None:
@@ -720,7 +833,8 @@ def run_one(
 
     # Setup and run the trajectory task
     task_conf = generate_default_configuration()
-    ttask = TrajectoryTask(model_path, log_dir, output_dir, filename, job_id, nsim)
+    param_conf = generate_default_param_sampler_configuration()
+    ttask = TrajectoryTask(model_path, log_dir, output_dir, filename, job_id, nsim, param_conf)
     ttask.run(task_conf)
 
     # Save the results
