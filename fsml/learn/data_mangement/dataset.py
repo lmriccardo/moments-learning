@@ -171,13 +171,14 @@ class FSMLOneStepAheadDataset(Dataset):
         """
         super(FSMLOneStepAheadDataset, self).__init__()
 
-        self.data_path   = data_path  # The absolute path of the data folder with all the CSV files
-        self.input_data  = []         # The input data to the Neural Network
-        self.output_data = []         # The output data, i.e., the ground trouth
-        self.files       = []         # A list with all the files in the data folder
-        self.num_files   = 0          # The total number of files
-        self.num_samples = 0          # The total number of simulations
-        self.max_number  = 0          # the maximum lenght of the header overall CSV files
+        self.data_path       = data_path  # The absolute path of the data folder with all the CSV files
+        self.input_data      = []         # The input data to the Neural Network
+        self.output_data     = []         # The output data, i.e., the ground trouth
+        self.files           = []         # A list with all the files in the data folder
+        self.num_files       = 0          # The total number of files
+        self.num_samples     = 0          # The total number of simulations
+        self.max_input_size  = 0          # the maximum lenght of the input data
+        self.max_output_size = 0          # The maximum lenght of the output data
 
         self.__initialize_all()
 
@@ -204,8 +205,12 @@ class FSMLOneStepAheadDataset(Dataset):
             params, outputs = FSMLOneStepAheadDataset.__split(current_csv_content.columns)
             
             # Update the maximum size of features with which we will pad
-            if (tot_len := len(params) + len(outputs)) > self.max_number:
-                self.max_number = tot_len
+            if (tot_len := len(params) + len(outputs)) > self.max_input_size:
+                self.max_input_size = tot_len
+
+            # Update the maximum size of the output data
+            if (tot_output := len(outputs)) > self.max_output_size:
+                self.max_output_size = tot_output
 
             variables = params + outputs
 
@@ -237,7 +242,7 @@ class FSMLOneStepAheadDataset(Dataset):
                f"  maximum_header_length={self.max_number}\n" + \
                ")"
     
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, int]:
         """ Return the i-th data as a tuple of (parameters, means and std.) """
         # First check that the index is in range
         assert index < self.num_samples, \
@@ -249,10 +254,15 @@ class FSMLOneStepAheadDataset(Dataset):
         y_data = torch.tensor(self.output_data[index])
 
         # Then pad the input data with zeros
-        num_pad = self.max_number - x_data.shape[0]
+        num_pad = self.max_input_size - x_data.shape[0]
         x_data = nn.functional.pad(x_data, pad=(0, num_pad))
 
-        return x_data, y_data
+        # Pad also the output
+        current_output_shape = y_data.shape[0]
+        num_pad = self.max_output_size - y_data.shape[0]
+        y_data = nn.functional.pad(y_data, pad=(0, num_pad))
+
+        return x_data, y_data, current_output_shape
     
     def __iter__(self) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
         """ Iterate all the dataset and generate one sample at a time """
