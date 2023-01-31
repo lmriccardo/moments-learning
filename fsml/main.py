@@ -13,7 +13,7 @@ import os
 # Transform and Simulate
 # -----------------------------------------------------------------------------
 
-def transform_and_simulate_one(kwargs: Dict[str, any]) -> str:
+def __transform_and_simulate_one(kwargs: Dict[str, any]) -> str:
     # Parameters for transformation
     prefix_path = kwargs["prefix_path"]
     model_id    = kwargs["model_id"]
@@ -68,7 +68,7 @@ def __transform_and_simulate(**kwargs: Dict[str, any]) -> None:
                 range(minc, maxc)
             ))
 
-            trans_model_path = pool.map(transform_and_simulate_one, args)
+            trans_model_path = pool.map(__transform_and_simulate_one, args)
             output_paths += trans_model_path
     
     utils.write_paths(output_paths, paths_file)
@@ -87,16 +87,30 @@ def main() -> None:
     paths_file  = opath.join(os.getcwd(), "data/paths.txt")
 
     nmodels = 5
-    nsim_per_model = 10
+    nsim_per_model = 500
 
     utils.setup_seed()
     
-    __transform_and_simulate(
-        prefix_path = prefix_path,
-        nmodels = nmodels,
-        paths_file = paths_file,
-        log_dir = log_dir,
-        output_dir = output_dir,
-        data_dir = data_dir,
-        nsim_per_model = nsim_per_model
-    )
+    # __transform_and_simulate(
+    #     prefix_path = prefix_path,
+    #     nmodels = nmodels,
+    #     paths_file = paths_file,
+    #     log_dir = log_dir,
+    #     output_dir = output_dir,
+    #     data_dir = data_dir,
+    #     nsim_per_model = nsim_per_model
+    # )
+
+    model_id = 2
+
+    kwargs = {
+        "prefix_path":prefix_path,
+        "model_id":model_id,
+        "log_dir":log_dir,
+        "output_dir":output_dir,
+        "data_dir":data_dir,
+        "job_id":model_id,
+        "nsim":nsim_per_model
+    }
+
+    __transform_and_simulate_one(kwargs)

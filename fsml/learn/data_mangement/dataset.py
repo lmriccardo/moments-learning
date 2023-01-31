@@ -5,7 +5,109 @@ from torch.utils.data import Dataset
 from typing import Tuple, Iterable, List, Generator
 import fsml.utils as utils
 import os.path as opath
-import pandas as pd
+
+
+class FSMLOneMeanStdDataset(Dataset):
+    r"""
+    This class represent a :class:`FSMLOneMeanStdDataset`. 
+
+    A class to represent the dataset of all the simulations. Essentially
+    the dataset is structured such that, on request (i.e. indexing) or 
+    on iteration it returns a couple of elements, where the first element
+    represent the input of the neural network, while the second will be
+    the ground trouth that will be used to compare the output of the NN
+    against it and thus compute the loss and update the optimizer. 
+
+    The dataset is initialized with just the fully qualified path that
+    points to the folder containing the result of all the simulations
+    that have been performed previously. In that folder there would be
+    a bunch of CSV files that contains a single row for each simulation
+    of the same model, and a bunch of columns (with a lowercase name)
+    representing the parameters of the model, and a bunch of (uppercase)
+    columns representing the mean and the standard deviation of species. 
+
+    The on indexing, i.e. call the :meth:`__getitem__` method with an index `i`
+    as input the dataset will returns a tuple with just two elements, where
+    the first are the input of the neural networks and are composed by the
+    parameters of the model, while the second represents the ground trouth
+    values is composed by the mean and the standard deviations. 
+
+    Attributes
+    ----------
+    csv_file : str
+        the input path of the CSV file with the data
+    input_data : List[List[float]]
+        A list with all the input data (parameters)
+    input_size : int
+        The size of the input data (i.e. the number points in a single tensor)
+    output_data : List[List[float]]
+        A list with all the output data (mean and std for each specie)
+    output_size : int
+        The size of the output data (i.e. the number points in a single tensor)
+    num_data : int
+        The total number of samples 
+    """
+    def __init__(self, csv_file: str) -> None:
+        """
+        :param csv_file: the input path of the CSV file with the data
+        """
+        self.csv_file = csv_file
+
+        self.input_data  = [] # A list with all the input data (parameters)
+        self.input_size  = 0  # The size of the input data (i.e. the number points in a single tensor)
+        self.output_data = [] # A list with all the output data (mean and std for each specie)
+        self.output_size = 0  # The size of the output data (i.e. the number points in a single tensor)
+        self.num_data    = 0  # The total number of samples 
+
+        self.__initialize_all() # Init all the fields
+
+    @staticmethod
+    def __split(columns: Iterable[str]) -> Tuple[List[str], List[str]]:
+        """ Split the input columns to find the parameters and the variables names """
+        # I have structured the data such that all the output variables
+        # are written in uppercase, and the parameters in lowercase.
+        parameters = [col for col in columns if col.islower() and col != "time"]
+        outputs    = [col for col in columns if col.isupper()]
+        return parameters, outputs
+
+    def __initialize_all(self) -> None:
+        """ Initialize all the fields of the class """
+        # First get the total number of data and the data itself
+        self.num_data, points = utils.read_csv_content(self.csv_file)
+
+        # Then we need to split the data taking the inputs and the output colums
+        params, output    = FSMLOneMeanStdDataset.__split(points)
+        self.input_data  += points.loc[:, params].values.tolist()
+        self.output_data += points.loc[:, output].values.tolist()
+        self.input_size   = len(params)
+        self.output_size  = len(output)
+    
+    def __len__(self) -> int:
+        """ Return the total number of sample in the dataset """
+        return self.num_data
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(\n"         + \
+               f"   num_samples={self.num_data},\n"    + \
+               f"   input_size={self.input_size},\n"   + \
+               f"   output_size={self.output_size},\n" + \
+               f"   csv_file={self.csv_file}\n)"
+    
+    def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
+        """ Return the i-th data as a tuple of (parameters, means and std.) """
+        # First check that the index is in range
+        assert index < self.num_data, \
+            f"[!!!] ERROR: Trying to address element at position {index} " + \
+            f"but only {self.num_data} are available in the dataset"
+        
+        input_tensor  = torch.tensor(self.input_data[index],  dtype=torch.float32)
+        output_tensor = torch.tensor(self.output_data[index], dtype=torch.float32)
+        return input_tensor, output_tensor
+    
+    def __iter__(self) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
+        """ Iterate all the dataset and generate one sample at a time """
+        for sample_id in range(self.num_samples):
+            yield self.__getitem__(sample_id)
 
 
 class FSMLMeanStdDataset(Dataset):

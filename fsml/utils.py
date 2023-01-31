@@ -522,7 +522,7 @@ def count_folder_elements(
     return number_of_elements, folder_content
 
 
-def count_csv_rows(csv_path: str) -> Tuple[int, pd.DataFrame]:
+def read_csv_content(csv_path: str) -> Tuple[int, pd.DataFrame]:
     """
     Given a CSV file as input, it counts the number of
     rows of the file. Obvioulsy not of the file itself,

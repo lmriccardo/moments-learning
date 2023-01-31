@@ -214,7 +214,7 @@ def generate_default_configuration() -> TaskConfiguration:
         output_event         = False,
         abs_tolerance        = 1.0e-09,
         rel_tolerance        = 1.0e-09,
-        report_out_stype     = "ParticleNumber",
+        report_out_stype     = "Concentration",
         report_fixed_species = True
     )
 
