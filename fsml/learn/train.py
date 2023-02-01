@@ -6,10 +6,11 @@ import torch.nn.functional as F
 import fsml.learn.data_mangement.dataset as dataset
 import fsml.learn.data_mangement.dataloader as dataloader
 import fsml.learn.models.nets as nets
+import matplotlib.pyplot as plt
 from typing import List
 from tqdm import tqdm
-import os.path as opath
-import os 
+import os
+import time
 
 
 class MagnitudeLoss(nn.Module):
@@ -40,56 +41,81 @@ class MagnitudeLoss(nn.Module):
             total_loss += raw_loss.pow(mean_rate_of_magnitude)
 
         return total_loss / torch_indexes.shape[0]
-
-
-def iter_dataset():
-    # data_dir = opath.join(os.getcwd(), "data/meanstd/")
-    # ds = dataset.FSMLMeanStdDataset(data_dir)
-    # dl = dataloader.FSMLDataLoader(ds, 3, True)
-    # model = nets.FSMLSimpleNetwork(input_size=ds.max_parameters)
-    # for data in dl():
-    #     input_data, _ = data
-    #     output = model(input_data)
-    #     print(output)
-
-    data_dir = opath.join(os.getcwd(), "data/denseoutputs/")
-    denseoutput_ds = dataset.FSMLOneStepAheadDataset(data_dir)
-    denseoutput_dl = dataloader.FSMLDataLoader(denseoutput_ds, 32, True, drop_last=True)
-    osa_predictor = nets.FSML_OSA_Predictor(
-        denseoutput_ds.max_input_size,  5, 50,
-        denseoutput_ds.max_output_size, 5, 30
-    )
     
-    loss = nn.MSELoss()
-    epochs = 10
-    # optimizer = optim.Adam(osa_predictor.parameters(), lr=0.00001, weight_decay=1e-6)
-    optimizer = optim.Adam(osa_predictor.parameters(), lr=0.001)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.2,  patience=35, verbose=True, min_lr=1e-06)
-    train_losses = []
-    osa_predictor.train()
 
+def train_one(csv_file: str, num_epochs: int=10) -> None:
+    r"""
+    Execute train and test for one dataset given by the input CSV file
+
+    :param csv_file: the fully qualified path to the CSV file
+    :param num_epochs: The number of epochs to run
+    :return:
+    """
+    print(f"[*] Input CSV Dataset file: {csv_file}")
+
+    # First create the dataset and then the dataloader
+    print("[*] Creating the respective dataset")
+    csv_ds = dataset.FSMLOneMeanStdDataset(csv_file)
+    print(csv_ds)
+
+    print("[*] Creating the dataloader")
+    csv_dl = dataloader.FSMLDataLoader(csv_ds, 10, shuffle=True, drop_last=True)
+
+    # Then instanciate the model
+    print("[*] Creating the predictor model")
+    fsml_predictor = nets.FSML_MLP_Predictor(
+        csv_ds.input_size,  2, 50,
+        csv_ds.output_size, 2, 50
+    )
+    print(fsml_predictor)
+    
+    # Instanciate the optimizer and the loss function
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(fsml_predictor.parameters(), lr=0.0001)
+
+    fsml_predictor.train()
+    train_losses = []
     torch.random.manual_seed(42)
 
-    for epoch in range(epochs):
+    print("[*] Starting training the model")
+    start = time.time()
+    for epoch in range(num_epochs):
+
         train_loss = torch.zeros(1)
         train_step = 0
-        progress_bar = tqdm(denseoutput_dl(), desc=f"Epoch Number: {epoch} --- ", leave=True)
+        progress_bar = tqdm(csv_dl(), desc=f"Epoch: {epoch} --- ", leave=True)
+        optimizer.zero_grad()
         for x_data, y_data, _ in progress_bar:
-            output = osa_predictor(x_data)
-            total_loss = loss(output, y_data)
-            train_loss += total_loss
-            total_loss.backward()
-            # torch.nn.utils.clip_grad_norm_(osa_predictor.parameters(), 5)
-            optimizer.step()
-            optimizer.zero_grad()
+
+            output      = fsml_predictor(x_data)
+            loss        = criterion(output, y_data)
+            train_loss += loss
             train_step += 1
-            progress_bar.set_postfix_str(f"Train Loss in Log Scale: {(train_loss / train_step).item()}")
+            
+            loss.backward()
+            optimizer.step()
+            
+            progress_bar.set_postfix_str(f"Train Loss: {(train_loss / train_step).item()}")
             progress_bar.refresh()
         
         train_loss /= train_step
-        # scheduler.step(train_loss)
         train_losses.append(train_loss.item())
+    
+    end = time.time()
+    print(f"[*] Training procedure ended in {end - start} sec")
+
+    epochs = list(range(0, num_epochs))
+    plt.plot(epochs, train_losses, label="Train losses over epochs")
+    plt.xlabel("Number Of Epochs")
+    plt.ylabel("Train losses")
+    plt.legend(loc="upper right")
+    plt.show()
+
+
+def train() -> None:
+    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00003_MeanStd.csv")
+    train_one(file, num_epochs=30)
 
 
 if __name__ == "__main__":
-    iter_dataset()
+    train()

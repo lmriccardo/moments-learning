@@ -3,11 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from typing import List
-from dataclasses import dataclass
 
-
-class FSML_OSA_Predictor(nn.Module):
+class FSML_MLP_Predictor(nn.Module):
     def __init__(self, input_dimension    : int,
                        input_side_layers  : int,
                        input_hidden_size  : int,
@@ -22,7 +19,7 @@ class FSML_OSA_Predictor(nn.Module):
         :param output_side_layers: how many layers on output side
         :param output_hidden_size: the dimensionality of the hidden output side layers
         """
-        super(FSML_OSA_Predictor, self).__init__()
+        super(FSML_MLP_Predictor, self).__init__()
 
         # The final list with all the layers
         self.layers = []

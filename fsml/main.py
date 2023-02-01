@@ -24,12 +24,13 @@ def __transform_and_simulate_one(kwargs: Dict[str, any]) -> str:
     data_dir   = kwargs["data_dir"]
     job_id     = kwargs["job_id"]
     nsim       = kwargs["nsim"]
+    gen_do     = kwargs["gen_do"]
 
     # Transform
     trans_model_path = convert_one(prefix_path, model_id)
 
     # Simulate
-    run_one(trans_model_path, log_dir, output_dir, data_dir, job_id, nsim)
+    run_one(trans_model_path, log_dir, output_dir, data_dir, job_id, nsim, gen_do)
 
     return trans_model_path
 
@@ -41,10 +42,11 @@ def __transform_and_simulate(**kwargs: Dict[str, any]) -> None:
     paths_file  = kwargs["paths_file"]
 
     # Parameters for simulation
-    log_dir        = kwargs["log_dir"]
-    output_dir     = kwargs["output_dir"]
-    data_dir       = kwargs["data_dir"]
-    nsim_per_model = kwargs["nsim_per_model"]
+    log_dir         = kwargs["log_dir"]
+    output_dir      = kwargs["output_dir"]
+    data_dir        = kwargs["data_dir"]
+    nsim_per_model  = kwargs["nsim_per_model"]
+    gen_denseoutput = kwargs["gen_do"]
 
     cpu_count = os.cpu_count()
     output_paths = []
@@ -63,7 +65,8 @@ def __transform_and_simulate(**kwargs: Dict[str, any]) -> None:
                                "output_dir"  : output_dir,
                                "data_dir"    : data_dir,
                                "job_id"      : x,
-                               "nsim"        : nsim_per_model
+                               "nsim"        : nsim_per_model,
+                               "gen_do"      : gen_denseoutput
                           },
                 range(minc, maxc)
             ))
@@ -87,7 +90,7 @@ def main() -> None:
     paths_file  = opath.join(os.getcwd(), "data/paths.txt")
 
     nmodels = 5
-    nsim_per_model = 500
+    nsim_per_model = 30
 
     utils.setup_seed()
     
@@ -98,19 +101,21 @@ def main() -> None:
     #     log_dir = log_dir,
     #     output_dir = output_dir,
     #     data_dir = data_dir,
-    #     nsim_per_model = nsim_per_model
+    #     nsim_per_model = nsim_per_model,
+    #     gen_do = False
     # )
 
-    model_id = 2
+    model_id = 1
 
     kwargs = {
-        "prefix_path":prefix_path,
-        "model_id":model_id,
-        "log_dir":log_dir,
-        "output_dir":output_dir,
-        "data_dir":data_dir,
-        "job_id":model_id,
-        "nsim":nsim_per_model
+        "prefix_path": prefix_path,
+        "model_id"   : model_id,
+        "log_dir"    : log_dir,
+        "output_dir" : output_dir,
+        "data_dir"   : data_dir,
+        "job_id"     : 0,
+        "nsim"       : nsim_per_model,
+        "gen_do"     : False
     }
 
     __transform_and_simulate_one(kwargs)

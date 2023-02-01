@@ -7,6 +7,7 @@ import os.path as opath
 from basico import *
 import COPASI as co
 import pandas as pd
+from tqdm import tqdm
 
 
 # -----------------------------------------------------------------------------
@@ -132,7 +133,8 @@ def create_report(datamodel     : co.CDataModel,
             ))
         
         # Add the corresponding ID to the header
-        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId() + "_amount").getCN().getString()))
+        suffix = "_amount" if out_stype == "ParticleNumber" else ""
+        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId() + suffix).getCN().getString()))
 
         # After each entry we need a separator
         if nspecie != num_species - 1:
@@ -361,6 +363,11 @@ class TrajectoryTask:
         If the trajectory task has been runned or not
     psampler_conf : ParameterSamplerConfiguration
         The configurator for the ParameterSampler
+    mean_std_array : List[List[float]]
+        The array that contains the output of the simulations
+        such that each row is a simulation and the first N
+        columns are the parameters while the last M columns
+        are the mean and the standard deviation of the outputs
 
     Methods
     -------
@@ -421,6 +428,8 @@ class TrajectoryTask:
 
         self.real_parameters_values = dict()
         self.modified_parameters_values = []
+
+        self.mean_std_array = []
 
         self.runned = False
 
@@ -605,6 +614,14 @@ class TrajectoryTask:
         
         return
     
+    def __take_mean_std(self, conf: TaskConfiguration) -> None:
+        """ Given a simulation result take the mean and std of that simulation """
+        # First take the dense output from the output file
+        dense_output = utils.load_report(self.output_file)
+        variables = [x for x in dense_output.columns if x != "time" and \
+                      (x.endswith("_amount") or conf.report_out_stype == "Concentration")]
+
+    
     def run_task(self) -> bool:
         r"""
         Run a Time-Course simulation with COPASI and returns TRUE
@@ -641,41 +658,43 @@ class TrajectoryTask:
         # 2. Save the current parameters
         self.real_parameters_values = self._get_parameters()
 
-        print(f"[*] Starting Job: {self.job}")
-
         # 3. Start the new simulations with new parameters
-        for x in self._generate_new_parameters():
+        with tqdm(self._generate_new_parameters(), 
+                  position=self.job, 
+                  desc=f"Running Job: {self.job}", 
+                  leave=True,
+                  total=self.num_simulations
+        ) as progress_bar:
+            for x in progress_bar:
 
-            # 3.1. Change the model parameters and save the new model to file
-            self._initialize_files()
-            self._change_parameter_values(x)
-            self.modified_parameters_values.append(x)
+                # 3.1. Change the model parameters and save the new model to file
+                self._initialize_files()
+                self._change_parameter_values(x)
+                self.modified_parameters_values.append(x)
 
-            # 3.2. Load the modified model into a new datamodel
-            self.load_model()
+                # 3.2. Load the modified model into a new datamodel
+                self.load_model()
 
-            # 3.3. Setup the trajectory task
-            self.setup_task(conf)
+                # 3.3. Setup the trajectory task
+                self.setup_task(conf)
 
-            # 3.4. Simulate
-            print(f"[*] Running Job {self.job} Task ID: {self.id}")
-            result = self.run_task()
+                # 3.4. Simulate
+                progress_bar.set_postfix_str(f"Task ID: {self.id}")
+                progress_bar.refresh()
+                result = self.run_task()
 
-            # 3.5. Generate a new Task ID and initialize the files
-            # for the new incoming simulation
-            self.count += 1
-            self.id = generate_taskid(self.filename, count=self.count)
+                # 3.5. Generate a new Task ID and initialize the files
+                # for the new incoming simulation
+                self.count += 1
+                self.id = generate_taskid(self.filename, count=self.count)
 
-            if not result:
-                # Remove res and report file from the list
-                self.output_files.pop()
-                self.res_files.pop()
-                self.modified_parameters_values.pop()
-                os.remove(self.output_file)
-                continue
-            
-            # 3.6. Print the final results
-            self.print_results()
+                if not result:
+                    # Remove res and report file from the list
+                    self.output_files.pop()
+                    self.res_files.pop()
+                    self.modified_parameters_values.pop()
+                    os.remove(self.output_file)
+                    continue
 
         # 4. Restore the original parameter value into the origina model
         self._change_parameter_values(self.real_parameters_values)
@@ -697,7 +716,9 @@ class TrajectoryTask:
 # -----------------------------------------------------------------------------
 
 
-def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]=None) -> None:
+def generate_data_file(
+    trajectory_task: TrajectoryTask, data_path: Optional[str]=None, gen_denseoutput: bool=True
+) -> None:
     r"""
     Takes as input the Trajectory Task that has been runned
     and generate a new file CSV in the data folder such that
@@ -708,6 +729,7 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 
     :param trajectory_task: A handle to a TrajectoryTask Object
     :param data_path      : The full qualified path of the data folder
+    :param gen_denseoutput: True if also the denseoutput should be generated False otherwise
     :return:  
     """
     # Check that the simulations has been runned
@@ -748,12 +770,13 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
             dense_output = utils.load_report(output_file)
             variables = [x for x in dense_output.columns if x != "time" and x.endswith("_amount")]
 
-            # Take the dense output of the amount species and the parameters
-            current_denseoutput_header = ["time"] + list(parameters_list[0].keys()) + variables
-            dense_output_amount = utils.select_data(dense_output, current_denseoutput_header)
-            current_denseoutput_amount = dense_output_amount.to_numpy() if current_denseoutput_amount is None \
-                                            else np.vstack((
-                                                current_denseoutput_amount, dense_output_amount.to_numpy()))
+            if gen_denseoutput:
+                # Take the dense output of the amount species and the parameters
+                current_denseoutput_header = ["time"] + list(parameters_list[0].keys()) + variables
+                dense_output_amount = utils.select_data(dense_output, current_denseoutput_header)
+                current_denseoutput_amount = dense_output_amount.to_numpy() if current_denseoutput_amount is None \
+                                                else np.vstack((
+                                                    current_denseoutput_amount, dense_output_amount.to_numpy()))
 
             # Compute the normalization and takes the mean and std for each variable
             class_normalization_variables = utils.normalize(dense_output, variables, ntype="classical")
@@ -798,15 +821,15 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
     data_df.to_csv(data_file)
 
     # Save the dense output amount
-    denseoutput_filename = data_filename + "_DenseOutput.csv"
-    denseoutput_file = opath.join(denseoutput_path, denseoutput_filename)
-    denseoutput_amount_df = pd.DataFrame(current_denseoutput_amount, columns=current_denseoutput_header)
-    denseoutput_amount_df.to_csv(denseoutput_file)
+    if gen_denseoutput:
+        denseoutput_filename = data_filename + "_DenseOutput.csv"
+        denseoutput_file = opath.join(denseoutput_path, denseoutput_filename)
+        denseoutput_amount_df = pd.DataFrame(current_denseoutput_amount, columns=current_denseoutput_header)
+        denseoutput_amount_df.to_csv(denseoutput_file)
 
     # Remove the report and res file
     for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
         if opath.exists(report_file): os.remove(report_file)
-        if opath.exists(res_file): os.remove(res_file)
 
 
 # -----------------------------------------------------------------------------
@@ -814,7 +837,8 @@ def generate_data_file(trajectory_task: TrajectoryTask, data_path: Optional[str]
 # -----------------------------------------------------------------------------
 
 def run_one(
-    model_path: str, log_dir: str, output_dir: str, data_dir: str, job_id: int, nsim: int
+    model_path: str, log_dir: str, output_dir: str, data_dir: str, 
+    job_id: int, nsim: int, gen_do: bool
 ) -> None:
     r"""
     Run `nsim` simulation for the single input model
@@ -825,6 +849,7 @@ def run_one(
     :param data_dir  : the absolute path to the data folder where to store the output data
     :param job_id    : The ID of the job (just an integer)
     :param nsim      : the total number of simultations to run
+    :param gen_do    : True if also the Dense Output should be generated
     :return:
     """
     # Get the filename of the model
@@ -838,11 +863,12 @@ def run_one(
     ttask.run(task_conf)
 
     # Save the results
-    generate_data_file(ttask, data_dir)
+    generate_data_file(ttask, data_dir, gen_denseoutput=gen_do)
 
 
 def run_simulations(
-    paths_file: str, log_dir: str, output_dir: str,  data_dir: str, nsim_per_model: int = 100
+    paths_file: str, log_dir: str, output_dir: str,  data_dir: str, 
+    nsim_per_model: int = 100, gen_denseoutput: bool=False
 ) -> None:
     r"""
     Run `nsim_per_model` simulations per each model belonging to the paths file
@@ -854,6 +880,7 @@ def run_simulations(
     :param output_dir: the absolute path to the output dir where to store the report and the result files
     :param data_dir  : the absolute path to the data folder where to store the output data
     :param nsim_per_model: the number of simulations per model
+    :param gen_denseoutput: True if also the Dense Output should be generated
     :return
     """
     path_list = utils.read_paths_file(paths_file)
@@ -867,7 +894,8 @@ def run_simulations(
                            output_dir, 
                            data_dir, 
                            x, 
-                           nsim_per_model), 
+                           nsim_per_model,
+                           gen_denseoutput), 
                 range(minc, maxc)
             ))
 
