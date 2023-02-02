@@ -1,4 +1,4 @@
-from typing import Tuple, List, Generator, Union, Optional, Callable
+from typing import Tuple, List, Union, Optional, Callable
 import basico.biomodels as biomodels
 import matplotlib.pyplot as plt
 from basico import COPASI
@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import libsbml
 import random
+import torch
 import math
 import sys
 import os
@@ -555,3 +556,21 @@ def find_indexes(df: pd.DataFrame, col_name: str="time", value: float=0.0) -> Li
     :return: a list of indexes
     """
     return df.index[df[col_name] == value].tolist()
+
+
+# -----------------------------------------------------------------------------
+# Other Utilities
+# -----------------------------------------------------------------------------
+
+def compute_accuracy(output: torch.Tensor, y_true: torch.Tensor) -> float:
+    r"""
+    Compute the accuracy between the output of the
+    predictor and the y_true values.
+
+    :param output: the output from the predictor
+    :param y_true: the true values
+    :return: the accuarcy
+    """
+    comparision_tensor = torch.isclose(output, y_true, atol=1.0e-1, rtol=1.0e-2)
+    total_size = comparision_tensor.shape[0] * comparision_tensor.shape[1]
+    return comparision_tensor.sum().item() / total_size

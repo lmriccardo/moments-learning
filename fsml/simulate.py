@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Generator
+from typing import List, Optional, Dict, Generator, Tuple
 from dataclasses import dataclass
 from multiprocessing import Pool
 from datetime import datetime
@@ -133,8 +133,7 @@ def create_report(datamodel     : co.CDataModel,
             ))
         
         # Add the corresponding ID to the header
-        suffix = "_amount" if out_stype == "ParticleNumber" else ""
-        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId() + suffix).getCN().getString()))
+        header.push_back(co.CRegisteredCommonName(co.CDataString(specie.getSBMLId() + "_specie").getCN().getString()))
 
         # After each entry we need a separator
         if nspecie != num_species - 1:
@@ -176,6 +175,9 @@ class TaskConfiguration:
         The output type of the species in the report (concentration or amount)
     report_fixed_species : bool
         If consider in the report also FIXED value species
+    data_path : Tuple[str,str]
+        A tuple with two elements, the first is the path for mean and std. output
+        the second, instead, is the output path for the dense output.
     """
     step_size            : Optional[float]  # The step size of the simulation
     initial_time         : float            # The initial time of the simulation
@@ -187,6 +189,7 @@ class TaskConfiguration:
     rel_tolerance        : float            # Relative tolerance parameter
     report_out_stype     : str              # The output type of the species in the report (concentration or amount)
     report_fixed_species : bool             # If consider in the report also FIXED value species
+    data_path            : Tuple[str,str]   # The path where to store the results
 
 
 def generate_default_configuration() -> TaskConfiguration:
@@ -207,6 +210,14 @@ def generate_default_configuration() -> TaskConfiguration:
 
     :return: a new TaskConfiguration object already configured 
     """
+    # First let's generate the data path
+    mean_std_path = opath.join(os.getcwd(), "data/meanstd/")
+    denseoutput_path = opath.join(os.getcwd(), "data/denseoutput/")
+
+    # Try to create these two paths
+    os.makedirs(mean_std_path, exist_ok=True)
+    os.makedirs(denseoutput_path, exist_ok=True)
+
     return TaskConfiguration(
         step_size            = 0.01,
         initial_time         = 0.0,
@@ -217,7 +228,8 @@ def generate_default_configuration() -> TaskConfiguration:
         abs_tolerance        = 1.0e-09,
         rel_tolerance        = 1.0e-09,
         report_out_stype     = "Concentration",
-        report_fixed_species = True
+        report_fixed_species = True,
+        data_path            = (mean_std_path, denseoutput_path)
     )
 
 
@@ -430,6 +442,8 @@ class TrajectoryTask:
         self.modified_parameters_values = []
 
         self.mean_std_array = []
+        self.dense_output_np = None
+        self.dense_output_header = None
 
         self.runned = False
 
@@ -614,13 +628,51 @@ class TrajectoryTask:
         
         return
     
-    def __take_mean_std(self, conf: TaskConfiguration) -> None:
+    def __process_output(self, conf: TaskConfiguration, gen_denseoutput: bool) -> Tuple[List[str], List[str]]:
         """ Given a simulation result take the mean and std of that simulation """
-        # First take the dense output from the output file
-        dense_output = utils.load_report(self.output_file)
-        variables = [x for x in dense_output.columns if x != "time" and \
-                      (x.endswith("_amount") or conf.report_out_stype == "Concentration")]
+        try:
+            # First take the dense output from the output file
+            dense_output = utils.load_report(self.output_file)
+            variables = [x for x in dense_output.columns if x != "time" and x.endswith("_specie")]
+            
+            parameter_names = list(self.modified_parameters_values[-1].keys())
 
+            if gen_denseoutput:
+                # Take the dense output of the species and parameters
+                self.dense_output_header = ["time"] + parameter_names + variables
+                current_dense_output = utils.select_data(dense_output, self.dense_output_header)
+                self.dense_output_np = self.dense_output_np.to_numpy() if self.dense_output_np is None \
+                                else np.vstack((
+                                    self.dense_output_np, current_dense_output.to_numpy()))
+            
+            # Compute the normalization and takes the mean and std for each variable
+            class_normalization_variables = utils.normalize(dense_output, variables, ntype="classical")
+            mean_std_variables = utils.get_mean_std(class_normalization_variables, variables)
+            mean_std_variables_np = mean_std_variables.to_numpy().T.reshape(1, -1).tolist()
+            mean_std_variables_names = []
+            
+            for variable in mean_std_variables.columns:
+                mean_std_variables_names.append(f"mean_{variable}".upper())
+                mean_std_variables_names.append(f"std_{variable}".upper())
+
+            # Then take the current values used for the parameter and add them to the np array
+            current_parameters = self.modified_parameters_values[-1]
+            current_parameters_name = list(map(lambda x : x.lower(), parameter_names))
+            current_parameters_value = list(current_parameters.values())
+
+            # Finally save the final result
+            self.mean_std_array.append(current_parameters_value + mean_std_variables_np[0])
+
+            # Then eliminate the output file
+            os.remove(self.output_file)
+            
+            # Return the name of the parameters and the name for the species
+            return current_parameters_name, mean_std_variables_names
+        
+        except AssertionError as ae:
+            ...
+
+        return
     
     def run_task(self) -> bool:
         r"""
@@ -645,11 +697,12 @@ class TrajectoryTask:
             utils.handle_run_errors(self.id)
             return False
 
-    def run(self, conf: TaskConfiguration) -> None:
+    def run(self, conf: TaskConfiguration, gen_denseoutput: bool=False) -> None:
         r"""
         Run the trajectory task
 
         :param conf: the Trajectory Task Configuration
+        :param gen_denseoutput: True to genereate also the Denseoutput file
         :return:
         """
         # 1. Print the basic information
@@ -657,6 +710,7 @@ class TrajectoryTask:
 
         # 2. Save the current parameters
         self.real_parameters_values = self._get_parameters()
+        parameter_names, variable_names = None, None
 
         # 3. Start the new simulations with new parameters
         with tqdm(self._generate_new_parameters(), 
@@ -683,6 +737,10 @@ class TrajectoryTask:
                 progress_bar.refresh()
                 result = self.run_task()
 
+                # If the simulation ended successfully then take the output
+                if result:
+                    parameter_names, variable_names = self.__process_output(conf, gen_denseoutput)
+
                 # 3.5. Generate a new Task ID and initialize the files
                 # for the new incoming simulation
                 self.count += 1
@@ -702,6 +760,23 @@ class TrajectoryTask:
         # 5. End the simulations
         self.runned = True
 
+        # 6. Save the result
+        mean_std_path, denseoutput_path = conf.data_path
+        data_filename = bytes.fromhex(self.id.split("-")[0]).decode("ASCII")
+        mean_std_filename = f"{data_filename}_MeanStd.csv"
+        mean_std_filepath = opath.join(mean_std_path, mean_std_filename)
+
+        self.mean_std_array = np.array(self.mean_std_array)
+        mean_std_df = pd.DataFrame(self.mean_std_array, columns=parameter_names + variable_names)
+        mean_std_df.to_csv(mean_std_filepath)
+
+        if gen_denseoutput:
+            denseoutput_filename = f"{data_filename}_DenseOutput.csv"
+            denseoutput_filepath = opath.join(denseoutput_path, denseoutput_filename)
+
+            denseoutput_df = pd.DataFrame(self.dense_output_np, columns=self.dense_output_header)
+            denseoutput_df.to_csv(denseoutput_filepath)
+
     def get_used_parameters(self) -> List[Dict[str, float]]:
         """
         Return the list of all the parameter mapping used for each simulation
@@ -709,127 +784,6 @@ class TrajectoryTask:
         :return: the parameter mapping
         """
         return self.modified_parameters_values
-
-
-# -----------------------------------------------------------------------------
-# Generation Results file function
-# -----------------------------------------------------------------------------
-
-
-def generate_data_file(
-    trajectory_task: TrajectoryTask, data_path: Optional[str]=None, gen_denseoutput: bool=True
-) -> None:
-    r"""
-    Takes as input the Trajectory Task that has been runned
-    and generate a new file CSV in the data folder such that
-    each row is a simulation and columns are divided as follow:
-    first N columns are the initial values of the parameters, 
-    the following 2 * M columns are the mean and the std.
-    deviation computed for each species throgh the entire simulation.
-
-    :param trajectory_task: A handle to a TrajectoryTask Object
-    :param data_path      : The full qualified path of the data folder
-    :param gen_denseoutput: True if also the denseoutput should be generated False otherwise
-    :return:  
-    """
-    # Check that the simulations has been runned
-    assert trajectory_task.runned, \
-        f"<ERROR, Job {trajectory_task.job}> No simulation has been runned"
-
-    simulation_path = opath.join(data_path, "meanstd")
-    denseoutput_path = opath.join(data_path, "denseoutputs")
-
-    # If the data path is not given then let's create a custom data path
-    # for both the simulations and the dense output result
-    if not data_path:
-        simulation_path = opath.join(os.getcwd(), "data/meanstd")
-        denseoutput_path = opath.join(os.getcwd(), "dat/denseoutputs")
-
-    # If the final simulation path does not exists just create it 
-    if not opath.exists(simulation_path):
-        os.makedirs(simulation_path)
-
-    # If the final dense output path does not exists just create it 
-    if not opath.exists(denseoutput_path):
-        os.makedirs(denseoutput_path)
-
-    simulation_path = opath.abspath(simulation_path)
-    denseoutput_path = opath.abspath(denseoutput_path)
-
-    # Obtain the parameter list
-    parameters_list = trajectory_task.get_used_parameters()
-
-    # Load the results for each simulation as dictionaries of (normalized) values
-    current_denseoutput_amount = None
-    current_denseoutput_header = None
-    species_mean_std: Dict[str, List[float]] = dict()
-    for output_file in trajectory_task.output_files:
-
-        try:
-            # Load the report and produce a DenseOutput DataFrame
-            dense_output = utils.load_report(output_file)
-            variables = [x for x in dense_output.columns if x != "time" and x.endswith("_amount")]
-
-            if gen_denseoutput:
-                # Take the dense output of the amount species and the parameters
-                current_denseoutput_header = ["time"] + list(parameters_list[0].keys()) + variables
-                dense_output_amount = utils.select_data(dense_output, current_denseoutput_header)
-                current_denseoutput_amount = dense_output_amount.to_numpy() if current_denseoutput_amount is None \
-                                                else np.vstack((
-                                                    current_denseoutput_amount, dense_output_amount.to_numpy()))
-
-            # Compute the normalization and takes the mean and std for each variable
-            class_normalization_variables = utils.normalize(dense_output, variables, ntype="classical")
-            mean_std_variables = utils.get_mean_std(class_normalization_variables, variables)
-            mean_std_variables_dict = mean_std_variables.to_dict()
-
-            # Initialize the dictionary of species and fill it with the values
-            for variable in variables:
-                mean_var = f"mean_{variable}".upper()
-                std_var  = f"std_{variable}".upper()
-
-                if not mean_var in species_mean_std:
-                    species_mean_std[mean_var] = []
-                    species_mean_std[std_var] = []
-            
-                mean_var_value = mean_std_variables_dict[variable]["mean"]
-                std_var_value  = mean_std_variables_dict[variable]["std"]
-
-                species_mean_std[mean_var].append(mean_var_value)
-                species_mean_std[std_var].append(std_var_value)
-
-        except AssertionError as ae:
-            ...
-
-    # Then we need to flatten the parameter list of dictionaries
-    # into a dictionary of parameters list
-    parameters_dictionary = { p.lower() : [] for p in parameters_list[0].keys() }
-    for parameter_dict in parameters_list:
-        for parameter, value in parameter_dict.items():
-            parameters_dictionary[parameter.lower()].append(value)
-        
-    # Then we need to merge the two dictionaries and create the DataFrame
-    df_dict = parameters_dictionary
-    df_dict.update(species_mean_std)
-    data_df = pd.DataFrame(data=df_dict)
-
-    # Craft the name of the data file that will contains the data
-    delimiter = "\\" if sys.platform == "win32" else "/"
-    data_filename = bytes.fromhex(output_file.split("-")[0].split(delimiter)[-1]).decode("ASCII")
-    simulation_filename = data_filename + "_MeanStd.csv"
-    data_file = opath.join(simulation_path, simulation_filename)
-    data_df.to_csv(data_file)
-
-    # Save the dense output amount
-    if gen_denseoutput:
-        denseoutput_filename = data_filename + "_DenseOutput.csv"
-        denseoutput_file = opath.join(denseoutput_path, denseoutput_filename)
-        denseoutput_amount_df = pd.DataFrame(current_denseoutput_amount, columns=current_denseoutput_header)
-        denseoutput_amount_df.to_csv(denseoutput_file)
-
-    # Remove the report and res file
-    for report_file, res_file in zip(trajectory_task.output_files, trajectory_task.res_files):
-        if opath.exists(report_file): os.remove(report_file)
 
 
 # -----------------------------------------------------------------------------
@@ -860,10 +814,10 @@ def run_one(
     task_conf = generate_default_configuration()
     param_conf = generate_default_param_sampler_configuration()
     ttask = TrajectoryTask(model_path, log_dir, output_dir, filename, job_id, nsim, param_conf)
-    ttask.run(task_conf)
+    ttask.run(task_conf, gen_denseoutput=gen_do)
 
     # Save the results
-    generate_data_file(ttask, data_dir, gen_denseoutput=gen_do)
+    # generate_data_file(ttask, data_dir, gen_denseoutput=gen_do)
 
 
 def run_simulations(

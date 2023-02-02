@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import fsml.learn.data_mangement.dataset as dataset
 import fsml.learn.data_mangement.dataloader as dataloader
 import fsml.learn.models.nets as nets
+import fsml.utils as utils
 import matplotlib.pyplot as plt
 from typing import List
 from tqdm import tqdm
@@ -64,8 +65,8 @@ def train_one(csv_file: str, num_epochs: int=10) -> None:
     # Then instanciate the model
     print("[*] Creating the predictor model")
     fsml_predictor = nets.FSML_MLP_Predictor(
-        csv_ds.input_size,  2, 50,
-        csv_ds.output_size, 2, 50
+        csv_ds.input_size,  5, 50,
+        csv_ds.output_size, 3, 30
     )
     print(fsml_predictor)
     
@@ -75,6 +76,7 @@ def train_one(csv_file: str, num_epochs: int=10) -> None:
 
     fsml_predictor.train()
     train_losses = []
+    train_accs = []
     torch.random.manual_seed(42)
 
     print("[*] Starting training the model")
@@ -82,6 +84,7 @@ def train_one(csv_file: str, num_epochs: int=10) -> None:
     for epoch in range(num_epochs):
 
         train_loss = torch.zeros(1)
+        train_acc  = 0
         train_step = 0
         progress_bar = tqdm(csv_dl(), desc=f"Epoch: {epoch} --- ", leave=True)
         optimizer.zero_grad()
@@ -91,30 +94,40 @@ def train_one(csv_file: str, num_epochs: int=10) -> None:
             loss        = criterion(output, y_data)
             train_loss += loss
             train_step += 1
+
+            with torch.no_grad():
+                acc = utils.compute_accuracy(output, y_data)
+                train_acc += acc
             
             loss.backward()
             optimizer.step()
             
-            progress_bar.set_postfix_str(f"Train Loss: {(train_loss / train_step).item()}")
+            progress_bar.set_postfix_str(
+                f"Train Loss: {(train_loss / train_step).item()}" + \
+                f"- Acc: {train_acc / train_step}")
+            
             progress_bar.refresh()
         
         train_loss /= train_step
+        train_acc /= train_step
         train_losses.append(train_loss.item())
+        train_accs.append(train_acc)
     
     end = time.time()
     print(f"[*] Training procedure ended in {end - start} sec")
 
     epochs = list(range(0, num_epochs))
     plt.plot(epochs, train_losses, label="Train losses over epochs")
+    plt.plot(epochs, train_accs, label="Train Accuracy over epochs")
     plt.xlabel("Number Of Epochs")
-    plt.ylabel("Train losses")
+    plt.ylabel("Train losses and Accuracy")
     plt.legend(loc="upper right")
     plt.show()
 
 
 def train() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00003_MeanStd.csv")
-    train_one(file, num_epochs=30)
+    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00002_MeanStd.csv")
+    train_one(file, num_epochs=150)
 
 
 if __name__ == "__main__":

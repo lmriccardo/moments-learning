@@ -90,7 +90,7 @@ def main() -> None:
     paths_file  = opath.join(os.getcwd(), "data/paths.txt")
 
     nmodels = 5
-    nsim_per_model = 30
+    nsim_per_model = 2000
 
     utils.setup_seed()
     
