@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 from typing import Tuple, Iterable, List, Generator, Union
 from sklearn.model_selection import train_test_split
 import fsml.utils as utils
+from copy import deepcopy
 import os.path as opath
 
 
@@ -337,3 +338,16 @@ class FSMLMeanStdDataset(Dataset):
             return self.__getitem_not_mixup(index)
 
         return self.__getitem_mixup(index)
+    
+
+def get_dataset_by_indices(
+    src_dataset: FSMLOneMeanStdDataset, train_ids: List[int], test_ids: List[int]
+) -> FSMLOneMeanStdDataset:
+    r"""
+    
+    """
+    # First copy the old dataset into the new one
+    dataset = deepcopy(src_dataset)
+
+    # Now split the train data both input and output
+    train_x_data, train_y_data = dataset.train_data

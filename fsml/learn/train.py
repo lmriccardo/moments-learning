@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+from torch.nn.modules.loss import _Loss, _WeightedLoss
 
-import fsml.learn.data_mangement.dataset as dataset
-import fsml.learn.data_mangement.dataloader as dataloader
-import fsml.learn.models.nets as nets
 import fsml.utils as utils
+from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset
+from fsml.learn.data_mangement.dataloader import FSMLDataLoader
+from sklearn.model_selection import KFold
+import fsml.learn.models.nets as nets
 import matplotlib.pyplot as plt
-from typing import List
+from typing import List, Tuple
 from tqdm import tqdm
 import os
 import time
@@ -44,6 +46,72 @@ class MagnitudeLoss(nn.Module):
         return total_loss / torch_indexes.shape[0]
     
 
+class KFoldCrossValidationWrapper:
+    r""" A simple wrapper class for K-Fold Cross Validation """
+
+    @staticmethod
+    def setup_kFold_validation(dataset    : FSMLOneMeanStdDataset, 
+                               kf_split   : int, 
+                               batch_size : int) -> List[Tuple[int, FSMLDataLoader]]:
+        """
+        Setup the kfold validation, i.e., returns a list of
+        triple (fold index, train dataloader, validation dataloader)
+
+        :param dataset: The dataset to split
+        :param kf_split: The total number of split
+        :param batch_size: the batch_size argument to the dataloader
+        :return: a list of triple (fold index, train dataloader, validation dataloader)
+        """
+        # Create the splitter and the dataloader list
+        kfold_splitter = KFold(n_splits=kf_split, shuffle=True)
+        tt_list = []
+
+        for fold_num, (train_ids, test_ids) in enumerate(kfold_splitter.split(dataset)):
+            print(fold_num, train_ids, test_ids)
+    
+
+class Trainer:
+    def __init__(self, train_dataset      : FSMLOneMeanStdDataset,              # The input train dataset
+                       train_dataloader   : FSMLDataLoader,                     # The input train dataloader
+                       optimizer          : optim.Optimizer,                    # The optimizer to use
+                       model              : nn.Module,                          # The predictor
+                       num_epochs         : int                   = 30,         # Total number of epochs
+                       criterion          : _Loss | _WeightedLoss = nn.MSELoss, # The Loss function to be used
+                       num_hidden_input   : int                   = 5,          # Number of hidden layer input side
+                       num_hidden_output  : int                   = 5,          # Number of hidden layers output side
+                       hidden_input_size  : int                   = 50,         # Size of hidden input layers
+                       hidden_output_size : int                   = 30,         # Size of hidden output layers
+
+                       model_path         : str = os.path.join(os.getcwd(), "models")   # The path where to store the models
+    ) -> None:
+        """
+        :param train_dataset: The input train dataset
+        :param train_dataloader: The input train dataloader
+        :param optimizer: The optimizer to use
+        :param model: The predictor
+        :param num_epochs: Total number of epochs
+        :param criterion: The Loss function to be used
+        :param num_hidden_input: Number of hidden layer input side
+        :param num_hidden_output: Number of hidden layers output side
+        :param hidden_input_size: Size of hidden input layers
+        :param hidden_output_size: Size of hidden output layers
+        :param model_path: The path where to store the models
+        """
+        self.train_dataset      = train_dataset
+        self.train_dataloder    = train_dataloader
+        self.optimizer          = optimizer
+        self.num_epochs         = num_epochs
+        self.criterion          = criterion()
+        self.num_hidden_input   = num_hidden_input
+        self.num_hidden_output  = num_hidden_output
+        self.hidden_input_size  = hidden_input_size
+        self.hidden_output_size = hidden_output_size
+        self.model_path         = model_path
+        self.model              = model
+
+    # def _train_step()
+    
+
 def train_one(csv_file: str, num_epochs: int=10) -> None:
     r"""
     Execute train and test for one dataset given by the input CSV file
@@ -56,11 +124,11 @@ def train_one(csv_file: str, num_epochs: int=10) -> None:
 
     # First create the dataset and then the dataloader
     print("[*] Creating the respective dataset")
-    csv_ds = dataset.FSMLOneMeanStdDataset(csv_file)
+    csv_ds = FSMLOneMeanStdDataset(csv_file)
     print(csv_ds)
 
     print("[*] Creating the dataloader")
-    csv_dl = dataloader.FSMLDataLoader(csv_ds, 10, shuffle=True, drop_last=True)
+    csv_dl = FSMLDataLoader(csv_ds, 10, shuffle=True, drop_last=True)
 
     # Then instanciate the model
     print("[*] Creating the predictor model")
@@ -130,5 +198,13 @@ def train() -> None:
     train_one(file, num_epochs=150)
 
 
+def kfold_try() -> None:
+    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00002_MeanStd.csv")
+    csv_ds = FSMLOneMeanStdDataset(file)
+
+    KFoldCrossValidationWrapper.setup_kFold_validation(csv_ds, 5, 32)
+
+
 if __name__ == "__main__":
-    train()
+    # train()
+    kfold_try()
