@@ -105,7 +105,7 @@ def main() -> None:
     #     gen_do = False
     # )
 
-    model_id = 1
+    model_id = 0
 
     kwargs = {
         "prefix_path": prefix_path,

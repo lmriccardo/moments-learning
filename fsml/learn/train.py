@@ -1,49 +1,23 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 from torch.nn.modules.loss import _Loss, _WeightedLoss
 
 import fsml.utils as utils
-from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset
+from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset,  \
+                                              get_dataset_by_indices, \
+                                              FSMLMeanStdDataset
+
 from fsml.learn.data_mangement.dataloader import FSMLDataLoader
 from sklearn.model_selection import KFold
 import fsml.learn.models.nets as nets
 import matplotlib.pyplot as plt
-from typing import List, Tuple
+from typing import List, Tuple, Callable, Optional
 from tqdm import tqdm
+from functools import wraps
 import os
+import os.path as opath
 import time
-
-
-class MagnitudeLoss(nn.Module):
-    def __init__(self) -> None:
-        super(MagnitudeLoss, self).__init__()
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor, indexes: List[int]) -> torch.Tensor:
-        torch_indexes = torch.tensor(indexes)
-        total_loss = torch.zeros(1)
-        for idx, (row1, row2) in enumerate(zip(inputs, targets)):
-            row1, row2 = row1[:indexes[idx]], row2[:indexes[idx]]
-
-            # Compute the differences between order of magnitudes
-            rate_order_of_magnitudes = torch.abs(torch.log10(abs(row1 / row2)))
-            
-            # Then takes order of magnitude away so that we can just compare the raw numbers
-            of_magnitude_row1 = torch.log10(row1.abs()).type(torch.int32)
-            of_magnitude_row2 = torch.log10(row2.abs()).type(torch.int32)
-            row1 = row1 / torch.tensor([10.0]).pow(of_magnitude_row1)
-            row2 = row2 / torch.tensor([10.0]).pow(of_magnitude_row2)
-
-            # Now compute the losses between the raw values
-            raw_loss = torch.mean((row1 - row2).pow(2))
-
-            # Compute the mean of all the order of magnitudes
-            mean_rate_of_magnitude = torch.mean(rate_order_of_magnitudes)
-
-            total_loss += raw_loss.pow(mean_rate_of_magnitude)
-
-        return total_loss / torch_indexes.shape[0]
     
 
 class KFoldCrossValidationWrapper:
@@ -53,7 +27,7 @@ class KFoldCrossValidationWrapper:
     def setup_kFold_validation(dataset    : FSMLOneMeanStdDataset, 
                                kf_split   : int, 
                                batch_size : int) -> List[Tuple[int, FSMLDataLoader]]:
-        """
+        r"""
         Setup the kfold validation, i.e., returns a list of
         triple (fold index, train dataloader, validation dataloader)
 
@@ -67,8 +41,78 @@ class KFoldCrossValidationWrapper:
         tt_list = []
 
         for fold_num, (train_ids, test_ids) in enumerate(kfold_splitter.split(dataset)):
-            print(fold_num, train_ids, test_ids)
+            fold_dataset = get_dataset_by_indices(dataset, train_ids, test_ids)
+            fold_dataloader = FSMLDataLoader(fold_dataset, batch_size=batch_size)
+            tt_list.append((fold_num, fold_dataloader))
+
+        return tt_list
     
+    @staticmethod
+    def kFoldValidation(dataset    : FSMLOneMeanStdDataset,
+                        model      : nets.FSML_MLP_Predictor,
+                        epoch      : int,
+                        kf_split   : int,
+                        batch_size : int,
+                        use        : bool=True) -> Callable:
+        r""" Run kFold Cross Validation """
+        def _kFoldValidation(func):
+            
+            @wraps(func)
+            def wrapper(*args, **kwargs) -> Tuple[float, float]:
+                """ The wrapper that returns the train and test total loss """
+                # If use is set to False then just run the train set and returns
+                if not use:
+                    train_loss, test_acc = func()
+                    return train_loss, test_acc
+                
+                # Set up the KFold validation and returns the dataloaders
+                tt_list = KFoldCrossValidationWrapper.setup_kFold_validation(
+                    dataset, kf_split, batch_size
+                )
+
+                progress_bar = tqdm(tt_list, desc=f"Epoch: {epoch} -- ", leave=True, position=0)
+                fold_total_train_loss = 0.0
+                fold_total_train_accuracy = 0.0
+                for fold_num, fold_dataloader in progress_bar:
+                    
+                    # Create a new progress bar for the train step
+                    dl_progress_bar = tqdm(fold_dataloader(), desc=f"Fold: {fold_num} -- ", leave=False, position=1)
+
+                    # Get the final train loss
+                    fold_train_loss, _ = func(fold_dataloader, dl_progress_bar)
+                    fold_total_train_loss += fold_train_loss
+
+                    # Set the dataset for testing
+                    fold_dataloader.dataset.test()
+
+                    # Validate
+                    total_accuracy = 0.0
+                    with torch.no_grad():
+                        model.eval()  # Set the model for evaluation
+                        for i_batch, (test_x, test_y, _) in enumerate(fold_dataloader):
+                            current_accuracy = utils.compute_accuracy(model(test_x), test_y)
+                            total_accuracy += current_accuracy
+                        
+                    total_accuracy /= (i_batch + 1)
+                    progress_bar.set_postfix_str(f"Train Loss: {fold_train_loss}, Test Acc: {total_accuracy}")
+                    progress_bar.refresh()
+
+                    fold_total_train_accuracy += total_accuracy
+
+                fold_total_train_loss /= (fold_num + 1)
+                fold_total_train_accuracy /= (fold_num + 1)
+
+                progress_bar.set_description_str(f"Epoch: {epoch} -- ")
+                progress_bar.set_postfix_str(
+                    f"Train Loss: {fold_total_train_loss}, Train Acc: {fold_total_train_accuracy}")
+                progress_bar.refresh()
+
+                return fold_total_train_loss, fold_total_train_accuracy
+            
+            return wrapper
+        
+        return _kFoldValidation
+
 
 class Trainer:
     def __init__(self, train_dataset      : FSMLOneMeanStdDataset,              # The input train dataset
@@ -81,6 +125,8 @@ class Trainer:
                        num_hidden_output  : int                   = 5,          # Number of hidden layers output side
                        hidden_input_size  : int                   = 50,         # Size of hidden input layers
                        hidden_output_size : int                   = 30,         # Size of hidden output layers
+                       k_fold             : int                   = 5,          # The number of fold for KFoldCrossValidation
+                       accuracy_threshold : float                 = 0.94,       # Stop for accuracy grater than this
 
                        model_path         : str = os.path.join(os.getcwd(), "models")   # The path where to store the models
     ) -> None:
@@ -96,6 +142,8 @@ class Trainer:
         :param hidden_input_size: Size of hidden input layers
         :param hidden_output_size: Size of hidden output layers
         :param model_path: The path where to store the models
+        :param k_fold: number of KFold Cross Validation runs
+        :param accuracy_threshold: Stop when the current accuracy overcome a value
         """
         self.train_dataset      = train_dataset
         self.train_dataloder    = train_dataloader
@@ -108,103 +156,211 @@ class Trainer:
         self.hidden_output_size = hidden_output_size
         self.model_path         = model_path
         self.model              = model
+        self.k_fold             = k_fold
+        self.use_kfold          = (k_fold != 0)
+        self.accuracy_threshold = accuracy_threshold
 
-    # def _train_step()
+        self.train_losses = []
+        self.train_accs   = []
+
+    def _run_epoch(self, epoch: int) -> Tuple[float, float]:
+        """ Run one single epoch of training """
+
+        @KFoldCrossValidationWrapper.kFoldValidation(
+            self.train_dataset, self.model, epoch, self.k_fold, self.train_dataloder.batch_size, self.use_kfold)
+        def __run_epoch(
+            dataloader: Optional[FSMLDataLoader]=None, prog_bar: Optional[tqdm]=None
+        ) -> Tuple[float, float]:
+            # If the input dataloader is None then use the default one
+            # The default dataloader is the one already defined in the class
+            if not dataloader:
+                dataloader = self.train_dataloder
+
+            if not prog_bar:
+                prog_bar = tqdm(dataloader(), desc=f"Epoch: {epoch} -- ", leave=True)
+            
+            train_loss = torch.zeros(1)
+            train_acc  = 0.0
+            train_step = 0
+            self.optimizer.zero_grad()
+            for _, (train_x, train_y, _) in enumerate(prog_bar):
+                output      = self.model(train_x)
+                loss        = self.criterion(output, train_y)
+                train_loss += loss
+
+                with torch.no_grad():
+                    acc = utils.compute_accuracy(output, train_y)
+                    train_acc += acc
+                
+                loss.backward()
+                self.optimizer.step()
+
+                train_step += 1
+                prog_bar.set_postfix_str(f"Train Loss: {(train_loss / train_step).item()}")
+            
+            train_loss /= train_step
+            train_acc  /= train_step
+            
+            return train_loss.item(), train_acc
+        
+        return __run_epoch(self.train_dataloder)
     
+    def run(self) -> None:
+        """ Run the training """
+        # Set the model for training
+        self.model.train()
 
-def train_one(csv_file: str, num_epochs: int=10) -> None:
-    r"""
-    Execute train and test for one dataset given by the input CSV file
+        print("[*] Start training the model")
+        start_time = time.time()
+        for epoch in range(self.num_epochs):
+            train_loss, train_acc = self._run_epoch(epoch)
+            self.train_losses.append(train_loss)
+            self.train_accs.append(train_acc)
 
-    :param csv_file: the fully qualified path to the CSV file
-    :param num_epochs: The number of epochs to run
-    :return:
-    """
-    print(f"[*] Input CSV Dataset file: {csv_file}")
+            if train_acc > self.accuracy_threshold:
+                print(f"[*] Accuracy threshold reached. Stop")
+                self.num_epochs = epoch + 1
+                break
+        
+        end_time = time.time()
+        print(f"[*] Training procedure ended in {end_time - start_time} msec")
 
-    # First create the dataset and then the dataloader
-    print("[*] Creating the respective dataset")
-    csv_ds = FSMLOneMeanStdDataset(csv_file)
-    print(csv_ds)
+        filepath_linux_format = opath.basename(self.train_dataset.csv_file).replace('\\', '/')
+        csv_filename = opath.basename(filepath_linux_format)
+        model_filepath = opath.join(
+            self.model_path, 
+            f"{csv_filename}_{self.model.__class__.__name__}.pth"
+        )
+        print(f"[*] Saving the model {model_filepath}")
+        torch.save(self.model.state_dict(), model_filepath)
+    
+    def plot(self) -> None:
+        """ Plot the result (train loss and train acc over epochs) """
+        epochs = list(range(self.num_epochs))
+        plt.plot(epochs, self.train_losses, label="Train losses")
+        plt.plot(epochs, self.train_accs, label="Train accuracies")
+        plt.xlabel("Number of Epochs")
+        plt.ylabel("Train losses and Accuracies")
+        plt.legend(loc="upper right")
+        plt.show()
+
+
+def __train_one(train_dataset     : FSMLOneMeanStdDataset,
+                criterion         : _Loss | _WeightedLoss,
+                batch_size        : int,
+                k_fold            : int,
+                num_epochs        : int,
+                num_hidden_input  : int,
+                num_hidden_output : int,
+                hidden_input_size : int,
+                hidden_output_size: int,
+                accuracy_threshold: float) -> None:
+    """ Run one training with the input dataset and configuration """
+    # Log the dataset for the training
+    print("[*] Called training procedure with dataset")
+    print(train_dataset)
 
     print("[*] Creating the dataloader")
-    csv_dl = FSMLDataLoader(csv_ds, 10, shuffle=True, drop_last=True)
-
-    # Then instanciate the model
-    print("[*] Creating the predictor model")
-    fsml_predictor = nets.FSML_MLP_Predictor(
-        csv_ds.input_size,  5, 50,
-        csv_ds.output_size, 3, 30
+    train_dataloader = FSMLDataLoader(
+        train_dataset, batch_size=batch_size, 
+        shuffle=True, drop_last=True
     )
-    print(fsml_predictor)
+
+    print("[*] Instantiating the Predictor")
+    predictor = nets.FSML_MLP_Predictor(
+        train_dataset.input_size,  num_hidden_input,  hidden_input_size,
+        train_dataset.output_size, num_hidden_output, hidden_output_size
+    )
+    print(predictor)
+
+    print("[*] Creating the Adam Optimizer")
+    optimizer = optim.Adam(predictor.parameters(), lr=0.0001)
+    print(optimizer)
+
+    print("[*] Instantiating the Trainer")
+    trainer = Trainer(
+        train_dataset, train_dataloader,
+        optimizer, predictor,
+        num_epochs, criterion,
+        num_hidden_input, num_hidden_output,
+        hidden_input_size, hidden_output_size, 
+        k_fold, accuracy_threshold
+    )
+
+    trainer.run()
+    trainer.plot()
+
+
+def train(path              : str,
+          criterion         : _Loss | _WeightedLoss= nn.MSELoss,
+          batch_size        : int                  = 10,
+          k_fold            : int                  = 5,
+          num_epochs        : int                  = 50,
+          num_hidden_input  : int                  = 5,
+          num_hidden_output : int                  = 3,
+          hidden_input_size : int                  = 50,
+          hidden_output_size: int                  = 30,
+          accuracy_threshold: float                = 0.94) -> None:
+    r"""
+    Run the training. The input `path` can be either a 
+    path to a CSV file that contains the dataset, or to
+    a folder with multiple CSV files (so multiple datasets).
+    In the first case the training procedure will be runned
+    only for that file, otherwise, in the second case,
+    multiple times as the number of files. 
+
+    :param path: the path to a CSV file or CSV folder
+    :param criterion: the PyTorch type of loss (or a custom one)
+    :param batch_size: the Size of the batch for the dataloader
+    :param k_fold: number of cross fold validation
+    :param num_epochs: The total number of epochs
+    :param num_hidden_input: The number of hidden layer in input side
+    :param num_hidden_output: The number of hidden layer in output side
+    :param hidden_input_size: The number of neurons for each input hidden layer
+    :param hidden_output_size: The number of neurons for each output hidden layer
+    :param accuracy_threshold: Stop when the current accuracy overcome a value
+    :return:
+    """
+    # Check if the input path is a file or a folder
+    input_abspath = opath.abspath(path)
+    assert opath.exists(input_abspath), \
+        f"[!!!] ERROR: The input path: {path} does not exists."
     
-    # Instanciate the optimizer and the loss function
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(fsml_predictor.parameters(), lr=0.0001)
-
-    fsml_predictor.train()
-    train_losses = []
-    train_accs = []
-    torch.random.manual_seed(42)
-
-    print("[*] Starting training the model")
-    start = time.time()
-    for epoch in range(num_epochs):
-
-        train_loss = torch.zeros(1)
-        train_acc  = 0
-        train_step = 0
-        progress_bar = tqdm(csv_dl(), desc=f"Epoch: {epoch} --- ", leave=True)
-        optimizer.zero_grad()
-        for x_data, y_data, _ in progress_bar:
-
-            output      = fsml_predictor(x_data)
-            loss        = criterion(output, y_data)
-            train_loss += loss
-            train_step += 1
-
-            with torch.no_grad():
-                acc = utils.compute_accuracy(output, y_data)
-                train_acc += acc
-            
-            loss.backward()
-            optimizer.step()
-            
-            progress_bar.set_postfix_str(
-                f"Train Loss: {(train_loss / train_step).item()}" + \
-                f"- Acc: {train_acc / train_step}")
-            
-            progress_bar.refresh()
-        
-        train_loss /= train_step
-        train_acc /= train_step
-        train_losses.append(train_loss.item())
-        train_accs.append(train_acc)
+    # If it is a file then create a FSMLOneMeanStdDataset 
+    # and run the training
+    if opath.isfile(input_abspath):
+        train_dataset = FSMLOneMeanStdDataset(input_abspath)
+        return __train_one(
+            train_dataset, criterion,
+            batch_size, k_fold, num_epochs,
+            num_hidden_input, num_hidden_output,
+            hidden_input_size, hidden_output_size,
+            accuracy_threshold
+        )
     
-    end = time.time()
-    print(f"[*] Training procedure ended in {end - start} sec")
+    # Otherwise it is a folder
+    print(f"[*] Received in input a path: {path}")
+    train_multi_dataset = FSMLMeanStdDataset(input_abspath)
+    print(f"[*] Created the Multi-Dataset")
+    print(train_multi_dataset)
 
-    epochs = list(range(0, num_epochs))
-    plt.plot(epochs, train_losses, label="Train losses over epochs")
-    plt.plot(epochs, train_accs, label="Train Accuracy over epochs")
-    plt.xlabel("Number Of Epochs")
-    plt.ylabel("Train losses and Accuracy")
-    plt.legend(loc="upper right")
-    plt.show()
+    for idx, train_dataset in enumerate(train_multi_dataset):
+        print(f": ---------------- : ({idx}) Using {train_dataset.csv_file} : ---------------- :")
+        __train_one(
+            train_dataset, criterion,
+            batch_size, k_fold, num_epochs,
+            num_hidden_input, num_hidden_output,
+            hidden_input_size, hidden_output_size,
+            accuracy_threshold
+        )
+
+    return
 
 
-def train() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00002_MeanStd.csv")
-    train_one(file, num_epochs=150)
-
-
-def kfold_try() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00002_MeanStd.csv")
-    csv_ds = FSMLOneMeanStdDataset(file)
-
-    KFoldCrossValidationWrapper.setup_kFold_validation(csv_ds, 5, 32)
+def main() -> None:
+    file = os.path.join(os.getcwd(), "data/meanstd/")
+    train(file, k_fold=3, num_epochs=150)
 
 
 if __name__ == "__main__":
-    # train()
-    kfold_try()
+    main()

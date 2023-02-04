@@ -227,7 +227,7 @@ class FSMLMeanStdDataset(Dataset):
 
         self.is_train = True   # True if __getitem__ should returns train data or False for test data
         
-        self.__initialize_all() # Initialize all the fields
+        self.__initialize_all(train, test) # Initialize all the fields
     
     def __initialize_all(self, train: float, test: float) -> None:
         """ Initialize all the fields of the class """
@@ -339,6 +339,10 @@ class FSMLMeanStdDataset(Dataset):
 
         return self.__getitem_mixup(index)
     
+    def __iter__(self) -> Generator[FSMLOneMeanStdDataset, None, None]:
+        for index in range(self.__len__()):
+            yield self.__getitem__(index)
+    
 
 def get_dataset_by_indices(
     src_dataset: FSMLOneMeanStdDataset, train_ids: List[int], test_ids: List[int]
@@ -351,3 +355,23 @@ def get_dataset_by_indices(
 
     # Now split the train data both input and output
     train_x_data, train_y_data = dataset.train_data
+
+    # Select only a subset of train data
+    train_x = torch.tensor(train_x_data, dtype=torch.float32)
+    train_X = train_x[train_ids, :].tolist()
+    train_y = torch.tensor(train_y_data, dtype=torch.float32)
+    train_Y = train_y[train_ids, :].tolist()
+
+    # Then do the same thing but with test indexes
+    test_X = train_x[test_ids, :].tolist()
+    test_Y = train_y[test_ids, :].tolist()
+
+    dataset.train_data = (train_X, train_Y)
+    dataset.train_size = len(train_X)
+    dataset.test_data  = (test_X, test_Y)
+    dataset.test_size  = len(test_X)
+
+    dataset.num_data = dataset.train_size + dataset.test_size
+    dataset.is_train = True
+
+    return dataset
