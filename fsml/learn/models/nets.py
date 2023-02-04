@@ -42,6 +42,9 @@ class FSML_MLP_Predictor(nn.Module):
             self.add_module(f"oLayer{oside_layer}", current_layer)
             self.layers.append(current_layer)
             current_in_dimension = output_hidden_size
+
+    def count_parameters(self):
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
     
     def forward(self, data: torch.Tensor) -> torch.Tensor:
         """ The forward function for the neural network """

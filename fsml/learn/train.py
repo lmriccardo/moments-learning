@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.nn.modules.loss import _Loss, _WeightedLoss
 
 import fsml.utils as utils
+from fsml.learn.test import Tester
 from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset,  \
                                               get_dataset_by_indices, \
                                               FSMLMeanStdDataset
@@ -127,7 +128,8 @@ class Trainer:
                        hidden_output_size : int                   = 30,         # Size of hidden output layers
                        k_fold             : int                   = 5,          # The number of fold for KFoldCrossValidation
                        accuracy_threshold : float                 = 0.94,       # Stop for accuracy grater than this
-
+                       
+                       imgs_path          : str = os.path.join(os.getcwd(), "img"),     # the path where to store the images
                        model_path         : str = os.path.join(os.getcwd(), "models")   # The path where to store the models
     ) -> None:
         """
@@ -142,6 +144,7 @@ class Trainer:
         :param hidden_input_size: Size of hidden input layers
         :param hidden_output_size: Size of hidden output layers
         :param model_path: The path where to store the models
+        :param imgs_path: the path where to store the images
         :param k_fold: number of KFold Cross Validation runs
         :param accuracy_threshold: Stop when the current accuracy overcome a value
         """
@@ -155,6 +158,7 @@ class Trainer:
         self.hidden_input_size  = hidden_input_size
         self.hidden_output_size = hidden_output_size
         self.model_path         = model_path
+        self.imgs_path          = imgs_path
         self.model              = model
         self.k_fold             = k_fold
         self.use_kfold          = (k_fold != 0)
@@ -205,8 +209,8 @@ class Trainer:
         
         return __run_epoch(self.train_dataloder)
     
-    def run(self) -> None:
-        """ Run the training """
+    def run(self) -> str:
+        """ Run the training and return the path of the model """
         # Set the model for training
         self.model.train()
 
@@ -233,16 +237,36 @@ class Trainer:
         )
         print(f"[*] Saving the model {model_filepath}")
         torch.save(self.model.state_dict(), model_filepath)
+
+        return model_filepath
     
     def plot(self) -> None:
         """ Plot the result (train loss and train acc over epochs) """
+        filepath_linux_format = opath.basename(self.train_dataset.csv_file).replace('\\', '/')
+        csv_filename = opath.basename(filepath_linux_format)
+        img_filename = f"{csv_filename}_{self.model.__class__.__name__}"
+
+        if self.k_fold != 0:
+            img_filename += f"_KFoldCrossValidation{self.k_fold}"
+
+        img_filepath = opath.join(self.imgs_path, img_filename)
+
         epochs = list(range(self.num_epochs))
-        plt.plot(epochs, self.train_losses, label="Train losses")
-        plt.plot(epochs, self.train_accs, label="Train accuracies")
+        torch_train_losses = torch.tensor(self.train_losses)
+        torch_train_accs = torch.tensor(self.train_accs)
+        torch_train_losses = torch_train_losses[torch_train_losses <= 1.0]
+
+        start_index = len(epochs) - torch_train_losses.shape[0]
+        epochs = epochs[start_index:]
+        torch_train_accs = torch_train_accs[start_index:]
+
+        figure = plt.figure(figsize=[15.0, 8.0])
+        plt.plot(epochs, torch_train_losses, label="Train losses")
+        plt.plot(epochs, torch_train_accs, label="Train accuracies")
         plt.xlabel("Number of Epochs")
         plt.ylabel("Train losses and Accuracies")
         plt.legend(loc="upper right")
-        plt.show()
+        figure.savefig(img_filepath)
 
 
 def __train_one(train_dataset     : FSMLOneMeanStdDataset,
@@ -272,6 +296,7 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
         train_dataset.output_size, num_hidden_output, hidden_output_size
     )
     print(predictor)
+    print(f"Models Parameters: {predictor.count_parameters()}")
 
     print("[*] Creating the Adam Optimizer")
     optimizer = optim.Adam(predictor.parameters(), lr=0.0001)
@@ -287,8 +312,19 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
         k_fold, accuracy_threshold
     )
 
-    trainer.run()
+    model_path = trainer.run()
     trainer.plot()
+
+    # Testing procedure
+    train_dataset.test()
+    tester = Tester(
+        model_path, train_dataloader,
+        num_hidden_input, num_hidden_output,
+        hidden_input_size, hidden_output_size
+    )
+
+    final_acc = tester.test()
+    print(f"FINAL ACCURACY: {final_acc * 100:.5f}")
 
 
 def train(path              : str,
