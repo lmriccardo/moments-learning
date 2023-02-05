@@ -705,6 +705,15 @@ class TrajectoryTask:
         :param gen_denseoutput: True to genereate also the Denseoutput file
         :return:
         """
+        mean_std_path, denseoutput_path = conf.data_path
+        data_filename = bytes.fromhex(self.id.split("-")[0]).decode("ASCII")
+        mean_std_filename = f"{data_filename}_MeanStd.csv"
+        mean_std_filepath = opath.join(mean_std_path, mean_std_filename)
+
+        # If it already exists then just remove it
+        if opath.exists(mean_std_filepath):
+            os.remove(mean_std_filepath)
+
         # 1. Print the basic information
         self.print_informations()
 
@@ -715,7 +724,7 @@ class TrajectoryTask:
         # 3. Start the new simulations with new parameters
         with tqdm(self._generate_new_parameters(), 
                   position=self.job, 
-                  desc=f"Running Job: {self.job}", 
+                  desc=f"Running Job for Model ID: {self.job}", 
                   leave=True,
                   total=self.num_simulations
         ) as progress_bar:
@@ -761,14 +770,9 @@ class TrajectoryTask:
         self.runned = True
 
         # 6. Save the result
-        mean_std_path, denseoutput_path = conf.data_path
-        data_filename = bytes.fromhex(self.id.split("-")[0]).decode("ASCII")
-        mean_std_filename = f"{data_filename}_MeanStd.csv"
-        mean_std_filepath = opath.join(mean_std_path, mean_std_filename)
-
         self.mean_std_array = np.array(self.mean_std_array)
         mean_std_df = pd.DataFrame(self.mean_std_array, columns=parameter_names + variable_names)
-        mean_std_df.to_csv(mean_std_filepath)
+        mean_std_df.to_csv(mean_std_filepath, mode='a')
 
         if gen_denseoutput:
             denseoutput_filename = f"{data_filename}_DenseOutput.csv"

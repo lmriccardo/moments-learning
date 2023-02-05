@@ -159,11 +159,9 @@ def convert_one(prefix_path: str, model_id: int) -> str:
     """
     # Download the model
     model_path = utils.download_model(prefix_path, model_id + 1)
-    print(f"({model_id}) [*] Dowloaded file {model_path}")
 
     # Transform the model
     trans_model_path = transform_model(model_path)
-    print(f"({model_id}) [*] Transformed model file {trans_model_path}")
 
     return trans_model_path
 

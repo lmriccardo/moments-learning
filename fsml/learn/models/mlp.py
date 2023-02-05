@@ -5,6 +5,7 @@ from torch.autograd import Variable
 
 
 class FSML_MLP_Predictor(nn.Module):
+    r""" A simple implementation of MLP for regression """
     def __init__(self, input_dimension    : int,
                        input_side_layers  : int,
                        input_hidden_size  : int,

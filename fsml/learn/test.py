@@ -1,7 +1,7 @@
 import torch
 
 from fsml.learn.data_mangement.dataloader import FSMLDataLoader
-from fsml.learn.models.nets import FSML_MLP_Predictor
+from fsml.learn.models.mlp import FSML_MLP_Predictor
 from fsml.utils import compute_accuracy
 import os.path as opath
 from typing import List, Tuple

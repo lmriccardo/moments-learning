@@ -4,14 +4,13 @@ import torch.optim as optim
 from torch.nn.modules.loss import _Loss, _WeightedLoss
 
 import fsml.utils as utils
-from fsml.learn.test import Tester
 from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset,  \
                                               get_dataset_by_indices, \
                                               FSMLMeanStdDataset
 
 from fsml.learn.data_mangement.dataloader import FSMLDataLoader
 from sklearn.model_selection import KFold
-import fsml.learn.models.nets as nets
+import fsml.learn.models.mlp as mlp
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Callable, Optional
 from tqdm import tqdm
@@ -50,7 +49,7 @@ class KFoldCrossValidationWrapper:
     
     @staticmethod
     def kFoldValidation(dataset    : FSMLOneMeanStdDataset,
-                        model      : nets.FSML_MLP_Predictor,
+                        model      : mlp.FSML_MLP_Predictor,
                         epoch      : int,
                         kf_split   : int,
                         batch_size : int,
@@ -287,7 +286,7 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
     )
 
     print("[*] Instantiating the Predictor")
-    predictor = nets.FSML_MLP_Predictor(
+    predictor = mlp.FSML_MLP_Predictor(
         train_dataset.input_size,  num_hidden_input,  hidden_input_size,
         train_dataset.output_size, num_hidden_output, hidden_output_size
     )
