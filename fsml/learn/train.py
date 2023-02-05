@@ -167,6 +167,15 @@ class Trainer:
         self.train_losses = []
         self.train_accs   = []
 
+        filepath_linux_format = opath.basename(self.train_dataset.csv_file).replace('\\', '/')
+        csv_filename = opath.basename(filepath_linux_format)
+        self.model_filename = f"{csv_filename}_{self.model.__class__.__name__}"
+
+        if self.k_fold != 0:
+            self.model_filename += f"_KFoldCrossValidation{self.k_fold}"
+
+        self.model_filepath = opath.join(self.model_path, self.model_filename + ".pth")
+
     def _run_epoch(self, epoch: int) -> Tuple[float, float]:
         """ Run one single epoch of training """
 
@@ -229,27 +238,14 @@ class Trainer:
         end_time = time.time()
         print(f"[*] Training procedure ended in {end_time - start_time} msec")
 
-        filepath_linux_format = opath.basename(self.train_dataset.csv_file).replace('\\', '/')
-        csv_filename = opath.basename(filepath_linux_format)
-        model_filepath = opath.join(
-            self.model_path, 
-            f"{csv_filename}_{self.model.__class__.__name__}.pth"
-        )
-        print(f"[*] Saving the model {model_filepath}")
-        torch.save(self.model.state_dict(), model_filepath)
+        print(f"[*] Saving the model {self.model_filepath}")
+        torch.save(self.model.state_dict(), self.model_filepath)
 
-        return model_filepath
+        return self.model_filepath
     
     def plot(self) -> None:
         """ Plot the result (train loss and train acc over epochs) """
-        filepath_linux_format = opath.basename(self.train_dataset.csv_file).replace('\\', '/')
-        csv_filename = opath.basename(filepath_linux_format)
-        img_filename = f"{csv_filename}_{self.model.__class__.__name__}"
-
-        if self.k_fold != 0:
-            img_filename += f"_KFoldCrossValidation{self.k_fold}"
-
-        img_filepath = opath.join(self.imgs_path, img_filename)
+        img_filepath = opath.join(self.imgs_path, self.model_filename + ".png")
 
         epochs = list(range(self.num_epochs))
         torch_train_losses = torch.tensor(self.train_losses)
@@ -278,7 +274,7 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
                 num_hidden_output : int,
                 hidden_input_size : int,
                 hidden_output_size: int,
-                accuracy_threshold: float) -> None:
+                accuracy_threshold: float) -> Tuple[str, FSMLDataLoader]:
     """ Run one training with the input dataset and configuration """
     # Log the dataset for the training
     print("[*] Called training procedure with dataset")
@@ -315,16 +311,7 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
     model_path = trainer.run()
     trainer.plot()
 
-    # Testing procedure
-    train_dataset.test()
-    tester = Tester(
-        model_path, train_dataloader,
-        num_hidden_input, num_hidden_output,
-        hidden_input_size, hidden_output_size
-    )
-
-    final_acc = tester.test()
-    print(f"FINAL ACCURACY: {final_acc * 100:.5f}")
+    return model_path, train_dataloader
 
 
 def train(path              : str,
@@ -336,7 +323,7 @@ def train(path              : str,
           num_hidden_output : int                  = 3,
           hidden_input_size : int                  = 50,
           hidden_output_size: int                  = 30,
-          accuracy_threshold: float                = 0.94) -> None:
+          accuracy_threshold: float                = 0.94) -> List[Tuple[str, FSMLDataLoader]]:
     r"""
     Run the training. The input `path` can be either a 
     path to a CSV file that contains the dataset, or to
@@ -355,24 +342,26 @@ def train(path              : str,
     :param hidden_input_size: The number of neurons for each input hidden layer
     :param hidden_output_size: The number of neurons for each output hidden layer
     :param accuracy_threshold: Stop when the current accuracy overcome a value
-    :return:
+    :return: A list of tuple (model_path, dataloader)
     """
     # Check if the input path is a file or a folder
     input_abspath = opath.abspath(path)
     assert opath.exists(input_abspath), \
         f"[!!!] ERROR: The input path: {path} does not exists."
     
+    outputs = []
+    
     # If it is a file then create a FSMLOneMeanStdDataset 
     # and run the training
     if opath.isfile(input_abspath):
         train_dataset = FSMLOneMeanStdDataset(input_abspath)
-        return __train_one(
+        return [__train_one(
             train_dataset, criterion,
             batch_size, k_fold, num_epochs,
             num_hidden_input, num_hidden_output,
             hidden_input_size, hidden_output_size,
             accuracy_threshold
-        )
+        )]
     
     # Otherwise it is a folder
     print(f"[*] Received in input a path: {path}")
@@ -382,15 +371,16 @@ def train(path              : str,
 
     for idx, train_dataset in enumerate(train_multi_dataset):
         print(f": ---------------- : ({idx}) Using {train_dataset.csv_file} : ---------------- :")
-        __train_one(
+        output = __train_one(
             train_dataset, criterion,
             batch_size, k_fold, num_epochs,
             num_hidden_input, num_hidden_output,
             hidden_input_size, hidden_output_size,
             accuracy_threshold
         )
+        outputs.append(output)
 
-    return
+    return outputs
 
 
 def main() -> None:

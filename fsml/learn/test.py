@@ -4,6 +4,7 @@ from fsml.learn.data_mangement.dataloader import FSMLDataLoader
 from fsml.learn.models.nets import FSML_MLP_Predictor
 from fsml.utils import compute_accuracy
 import os.path as opath
+from typing import List, Tuple
 
 
 class Tester:
@@ -65,3 +66,30 @@ class Tester:
 
         print("[*] Testing procedure ended succesfully")
         return test_accuracy
+    
+
+def test(paths_and_dataloaders: List[Tuple[str, FSMLDataLoader]],
+         num_hidden_input     : int = 5,
+         num_hidden_output    : int = 3,
+         hidden_input_size    : int = 50,
+         hidden_output_size   : int = 30) -> None:
+    r"""
+    Run the testing phase against some pre-trained models.
+
+    :param paths_and_dataloaders: a list of tuple (model_path, dataloader)
+    :param num_hidden_input: The number of hidden layer in input side
+    :param num_hidden_output: The number of hidden layer in output side
+    :param hidden_input_size: The number of neurons for each input hidden layer
+    :param hidden_output_size: The number of neurons for each output hidden layer
+    :return:
+    """
+    for idx, (model_path, dataloader) in enumerate(paths_and_dataloaders):
+        print(f": ---------------- : ({idx}) Test Model {model_path} : ---------------- :")
+        tester = Tester(
+            model_path, dataloader,
+            num_hidden_input, num_hidden_output,
+            hidden_input_size, hidden_output_size
+        )
+
+        final_acc = tester.test()
+        print(f"FINAL ACCURACY: {final_acc * 100:.5f}")
