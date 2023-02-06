@@ -571,6 +571,6 @@ def compute_accuracy(output: torch.Tensor, y_true: torch.Tensor) -> float:
     :param y_true: the true values
     :return: the accuarcy
     """
-    comparision_tensor = torch.isclose(output, y_true, atol=1.0e-1, rtol=1.0e-2)
+    comparision_tensor = torch.isclose(output, y_true, atol=1.0e-2, rtol=1.0e-2)
     total_size = comparision_tensor.shape[0] * comparision_tensor.shape[1]
     return comparision_tensor.sum().item() / total_size

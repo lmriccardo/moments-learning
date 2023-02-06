@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 
 from typing import Tuple, Iterable, List, Generator, Union
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import fsml.utils as utils
 from copy import deepcopy
 import os.path as opath
@@ -106,6 +107,11 @@ class FSMLOneMeanStdDataset(Dataset):
         self.output_size  = len(output)
         self.parameters   = params
         self.outputs      = output
+
+        # Define the standard scaler to preprocess data
+        scaler = StandardScaler()
+        scaler.fit(self.input_data)
+        self.input_data = scaler.transform(self.input_data)
 
         train_x_data, test_x_data, train_y_data, test_y_data = train_test_split(
             self.input_data, self.output_data, train_size=train, test_size=test, random_state=42

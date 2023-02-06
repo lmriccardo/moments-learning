@@ -2,18 +2,16 @@ import torch
 
 from fsml.learn.data_mangement.dataloader import FSMLDataLoader
 from fsml.learn.models.mlp import FSML_MLP_Predictor
-from fsml.learn.models.rbf import FSML_RBF_Predictor
 from fsml.utils import compute_accuracy
 import os.path as opath
 from typing import List, Tuple
-import config
+import fsml.learn.config as config
 
 
 class Tester:
     def __init__(self, model_path         : str,             # The path of the model
                        test_dataloader    : FSMLDataLoader,  # The dataloader for testing
-                       model_type         : str,             # The model type to use
-                       *args
+                       **kwargs
     ) -> None:
         """
         :param model_path: the path where the model has been saved
@@ -21,17 +19,11 @@ class Tester:
         """
         self.model_path         = model_path
         self.test_dataloader    = test_dataloader
-        self.model_type         = model_type
 
-        if model_type.lower() == "mlp":
-            self.num_hidden_input   = args[0]
-            self.num_hidden_output  = args[1]
-            self.hidden_input_size  = args[2]
-            self.hidden_output_size = args[3]
-        else:
-            self.n_hidden_layers = args[0]
-            self.hidden_sizes    = args[1]
-            self.basis_func      = args[2]
+        self.num_hidden_input   = kwargs["num_hidden_input"]
+        self.hidden_input_size  = kwargs["hidden_input_size"]
+        self.num_hidden_output  = kwargs["num_hidden_output"]
+        self.hidden_output_size = kwargs["hidden_output_size"]
 
         # Check that the model path really exists
         assert opath.exists(opath.abspath(model_path)), \
@@ -52,16 +44,10 @@ class Tester:
         # Create an initial predictor
         test_dataset = self.test_dataloader.dataset
 
-        if self.model_type.lower() == "mlp":
-            predictor = FSML_MLP_Predictor(
-                test_dataset.input_size,  self.num_hidden_input,  self.hidden_input_size,
-                test_dataset.output_size, self.num_hidden_output, self.hidden_output_size,
-            )
-        else:
-            predictor = FSML_RBF_Predictor(
-                test_dataset.input_size, test_dataset.output_size,
-                self.n_hidden_layers, self.hidden_sizes, self.basis_func
-            )
+        predictor = FSML_MLP_Predictor(
+            test_dataset.input_size,  self.num_hidden_input,  self.hidden_input_size,
+            test_dataset.output_size, self.num_hidden_output, self.hidden_output_size,
+        )
 
         # Load the state dict from the saved model
         predictor.load_state_dict(torch.load(opath.abspath(self.model_path)))
@@ -84,7 +70,7 @@ class Tester:
 
 def test(paths_and_dataloaders: List[Tuple[str, FSMLDataLoader]],
          model_type           : str = config.MODEL_TYPE,
-         *args) -> List[float]:
+         **kwargs) -> List[float]:
     r"""
     Run the testing phase against some pre-trained models.
 
@@ -98,7 +84,7 @@ def test(paths_and_dataloaders: List[Tuple[str, FSMLDataLoader]],
     final_accuracies = []
     for idx, (model_path, dataloader) in enumerate(paths_and_dataloaders):
         print(f": ---------------- : ({idx}) Test Model {model_path} : ---------------- :")
-        tester = Tester(model_path, dataloader, model_type, *args)
+        tester = Tester(model_path, dataloader, model_type, **kwargs)
 
         final_acc = tester.test()
         print(f"FINAL ACCURACY: {final_acc * 100:.5f}")

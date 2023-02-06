@@ -11,7 +11,6 @@ from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset,  \
 from fsml.learn.data_mangement.dataloader import FSMLDataLoader
 from sklearn.model_selection import KFold
 import fsml.learn.models.mlp as mlp
-import fsml.learn.models.rbf as rbf
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Callable, Optional
 from tqdm import tqdm
@@ -19,7 +18,7 @@ from functools import wraps
 import os
 import os.path as opath
 import time
-import config
+import fsml.learn.config as config
     
 
 class KFoldCrossValidationWrapper:
@@ -207,7 +206,7 @@ class Trainer:
                 loss.backward()
 
                 # Apply the gradient clipping
-                torch.nn.utils.clip_grad_norm(self.model.parameters(), self.grad_clip)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 self.optimizer.step()
 
                 train_step += 1
@@ -274,14 +273,13 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
                 batch_size        : int,
                 k_fold            : int,
                 num_epochs        : int,
-                model_type        : str,
                 accuracy_threshold: float,
                 patience          : float,
                 min_lr            : float,
                 grad_clip         : float,
                 factor            : float,
                 mode              : str,
-                *args) -> Tuple[str, FSMLDataLoader]:
+                **kwargs) -> Tuple[str, FSMLDataLoader]:
     """ Run one training with the input dataset and configuration """
     # Log the dataset for the training
     print("[*] Called training procedure with dataset")
@@ -294,23 +292,21 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
     )
 
     print("[*] Instantiating the Predictor")
-    if model_type.lower() == "mlp":
-        num_hidden_input, hidden_input_size, num_hidden_output, hidden_output_size = args
-        predictor = mlp.FSML_MLP_Predictor(
-            train_dataset.input_size,  num_hidden_input,  hidden_input_size,
-            train_dataset.output_size, num_hidden_output, hidden_output_size
-        )
-    else:
-        n_hidden_layer, hidden_sizes, basis_func = args
-        predictor = rbf.FSML_RBF_Predictor(
-            train_dataset.input_size, train_dataset.output_size,
-            n_hidden_layer, hidden_sizes, basis_func
-        )
+    num_hidden_input   = kwargs["num_hidden_input"]
+    hidden_input_size  = kwargs["hidden_input_size"]
+    num_hidden_output  = kwargs["num_hidden_output"]
+    hidden_output_size = kwargs["hidden_output_size"]
+
+    predictor = mlp.FSML_MLP_Predictor(
+        train_dataset.input_size,  num_hidden_input,  hidden_input_size,
+        train_dataset.output_size, num_hidden_output, hidden_output_size
+    )
     print(predictor)
     print(f"Models Parameters: {predictor.count_parameters()}")
 
     print("[*] Creating the Adam Optimizer and the LR scheduler")
-    optimizer = optim.Adam(predictor.parameters(), lr=config.LR)
+    optimizer = optim.Adam(
+        predictor.parameters(), lr=config.LR, weight_decay=config.WEIGHT_DECAY)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer, mode=mode, factor=factor,
         patience=patience, verbose=True, min_lr=min_lr)
@@ -336,14 +332,13 @@ def train(path              : str,
           batch_size        : int                  = config.BATCH_SIZE,
           k_fold            : int                  = config.KF_SPLIT,
           num_epochs        : int                  = config.NUM_EPOCHS,
-          model_type        : str                  = config.MODEL_TYPE,
           accuracy_threshold: float                = config.ACCURACY_THRESHOLD,
           patience          : float                = config.PATIENCE,
           min_lr            : float                = config.MIN_LR,
           grad_clip         : float                = config.GRAD_CLIP,
           factor            : float                = config.FACTOR,
           mode              : str                  = config.MODE,
-          *args) -> List[Tuple[str, FSMLDataLoader]]:
+          **kwargs) -> List[Tuple[str, FSMLDataLoader]]:
     r"""
     Run the training. The input `path` can be either a 
     path to a CSV file that contains the dataset, or to
@@ -357,7 +352,6 @@ def train(path              : str,
     :param batch_size: the Size of the batch for the dataloader
     :param k_fold: number of cross fold validation
     :param num_epochs: The total number of epochs
-    :param model_type: the type of the model to use
     :param accuracy_threshold: Stop when the current accuracy overcome a value
     :param patience: Number of epochs with no improvement after which learning rate will be reduced
     :param min_lr: A lower bound on the learning rate of all param groups
@@ -379,8 +373,9 @@ def train(path              : str,
         train_dataset = FSMLOneMeanStdDataset(input_abspath)
         return [__train_one(
             train_dataset, criterion, batch_size, 
-            k_fold, num_epochs, model_type, accuracy_threshold, 
-            patience, min_lr, grad_clip, factor, mode, *args
+            k_fold, num_epochs, accuracy_threshold, 
+            patience, min_lr, grad_clip, factor, mode, 
+            **kwargs
         )]
     
     # Otherwise it is a folder
@@ -393,18 +388,10 @@ def train(path              : str,
         print(f": ---------------- : ({idx}) Using {train_dataset.csv_file} : ---------------- :")
         output = __train_one(
             train_dataset, criterion, batch_size, 
-            k_fold, num_epochs, model_type, accuracy_threshold, 
-            patience, min_lr, grad_clip, factor, mode, *args
+            k_fold, num_epochs, accuracy_threshold, 
+            patience, min_lr, grad_clip, factor, mode, 
+            **kwargs
         )
         outputs.append(output)
 
     return outputs
-
-
-def main() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/")
-    train(file, k_fold=3, num_epochs=150)
-
-
-if __name__ == "__main__":
-    main()
