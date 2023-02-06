@@ -4,8 +4,8 @@ import os
 
 
 def main() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/")
-    outputs = train(file, k_fold=3, num_epochs=150)
+    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00006_MeanStd.csv")
+    outputs = train(file, k_fold=5, num_epochs=200)
     test(outputs)
 
 

@@ -11,6 +11,7 @@ from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset,  \
 from fsml.learn.data_mangement.dataloader import FSMLDataLoader
 from sklearn.model_selection import KFold
 import fsml.learn.models.mlp as mlp
+import fsml.learn.models.rbf as rbf
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Callable, Optional
 from tqdm import tqdm
@@ -18,6 +19,7 @@ from functools import wraps
 import os
 import os.path as opath
 import time
+import config
     
 
 class KFoldCrossValidationWrapper:
@@ -119,12 +121,10 @@ class Trainer:
                        train_dataloader   : FSMLDataLoader,                     # The input train dataloader
                        optimizer          : optim.Optimizer,                    # The optimizer to use
                        model              : nn.Module,                          # The predictor
+                       lr_scheduler       : optim.lr_scheduler._LRScheduler,    # The Learning Rate Scheduler
+                       grad_clip          : int,                                # Gradient clipping value
                        num_epochs         : int                   = 30,         # Total number of epochs
                        criterion          : _Loss | _WeightedLoss = nn.MSELoss, # The Loss function to be used
-                       num_hidden_input   : int                   = 5,          # Number of hidden layer input side
-                       num_hidden_output  : int                   = 5,          # Number of hidden layers output side
-                       hidden_input_size  : int                   = 50,         # Size of hidden input layers
-                       hidden_output_size : int                   = 30,         # Size of hidden output layers
                        k_fold             : int                   = 5,          # The number of fold for KFoldCrossValidation
                        accuracy_threshold : float                 = 0.94,       # Stop for accuracy grater than this
                        
@@ -136,6 +136,8 @@ class Trainer:
         :param train_dataloader: The input train dataloader
         :param optimizer: The optimizer to use
         :param model: The predictor
+        :param lr_scheduler: The Learning Rate Scheduler
+        :param grad_clip: Gradient clipping value
         :param num_epochs: Total number of epochs
         :param criterion: The Loss function to be used
         :param num_hidden_input: Number of hidden layer input side
@@ -152,13 +154,11 @@ class Trainer:
         self.optimizer          = optimizer
         self.num_epochs         = num_epochs
         self.criterion          = criterion()
-        self.num_hidden_input   = num_hidden_input
-        self.num_hidden_output  = num_hidden_output
-        self.hidden_input_size  = hidden_input_size
-        self.hidden_output_size = hidden_output_size
         self.model_path         = model_path
         self.imgs_path          = imgs_path
         self.model              = model
+        self.lr_scheduler       = lr_scheduler
+        self.grad_clip          = grad_clip
         self.k_fold             = k_fold
         self.use_kfold          = (k_fold != 0)
         self.accuracy_threshold = accuracy_threshold
@@ -205,6 +205,9 @@ class Trainer:
                     train_acc += acc
                 
                 loss.backward()
+
+                # Apply the gradient clipping
+                torch.nn.utils.clip_grad_norm(self.model.parameters(), self.grad_clip)
                 self.optimizer.step()
 
                 train_step += 1
@@ -233,6 +236,8 @@ class Trainer:
                 print(f"[*] Accuracy threshold reached. Stop")
                 self.num_epochs = epoch + 1
                 break
+
+            self.lr_scheduler.step(train_loss)
         
         end_time = time.time()
         print(f"[*] Training procedure ended in {end_time - start_time} msec")
@@ -269,11 +274,14 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
                 batch_size        : int,
                 k_fold            : int,
                 num_epochs        : int,
-                num_hidden_input  : int,
-                num_hidden_output : int,
-                hidden_input_size : int,
-                hidden_output_size: int,
-                accuracy_threshold: float) -> Tuple[str, FSMLDataLoader]:
+                model_type        : str,
+                accuracy_threshold: float,
+                patience          : float,
+                min_lr            : float,
+                grad_clip         : float,
+                factor            : float,
+                mode              : str,
+                *args) -> Tuple[str, FSMLDataLoader]:
     """ Run one training with the input dataset and configuration """
     # Log the dataset for the training
     print("[*] Called training procedure with dataset")
@@ -286,24 +294,34 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
     )
 
     print("[*] Instantiating the Predictor")
-    predictor = mlp.FSML_MLP_Predictor(
-        train_dataset.input_size,  num_hidden_input,  hidden_input_size,
-        train_dataset.output_size, num_hidden_output, hidden_output_size
-    )
+    if model_type.lower() == "mlp":
+        num_hidden_input, hidden_input_size, num_hidden_output, hidden_output_size = args
+        predictor = mlp.FSML_MLP_Predictor(
+            train_dataset.input_size,  num_hidden_input,  hidden_input_size,
+            train_dataset.output_size, num_hidden_output, hidden_output_size
+        )
+    else:
+        n_hidden_layer, hidden_sizes, basis_func = args
+        predictor = rbf.FSML_RBF_Predictor(
+            train_dataset.input_size, train_dataset.output_size,
+            n_hidden_layer, hidden_sizes, basis_func
+        )
     print(predictor)
     print(f"Models Parameters: {predictor.count_parameters()}")
 
-    print("[*] Creating the Adam Optimizer")
-    optimizer = optim.Adam(predictor.parameters(), lr=0.0001)
-    print(optimizer)
+    print("[*] Creating the Adam Optimizer and the LR scheduler")
+    optimizer = optim.Adam(predictor.parameters(), lr=config.LR)
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer=optimizer, mode=mode, factor=factor,
+        patience=patience, verbose=True, min_lr=min_lr)
+    print(optimizer, lr_scheduler)
 
     print("[*] Instantiating the Trainer")
     trainer = Trainer(
         train_dataset, train_dataloader,
         optimizer, predictor,
+        lr_scheduler, grad_clip,
         num_epochs, criterion,
-        num_hidden_input, num_hidden_output,
-        hidden_input_size, hidden_output_size, 
         k_fold, accuracy_threshold
     )
 
@@ -314,15 +332,18 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
 
 
 def train(path              : str,
-          criterion         : _Loss | _WeightedLoss= nn.MSELoss,
-          batch_size        : int                  = 10,
-          k_fold            : int                  = 5,
-          num_epochs        : int                  = 50,
-          num_hidden_input  : int                  = 5,
-          num_hidden_output : int                  = 3,
-          hidden_input_size : int                  = 50,
-          hidden_output_size: int                  = 30,
-          accuracy_threshold: float                = 0.94) -> List[Tuple[str, FSMLDataLoader]]:
+          criterion         : _Loss | _WeightedLoss= config.CRITERION,
+          batch_size        : int                  = config.BATCH_SIZE,
+          k_fold            : int                  = config.KF_SPLIT,
+          num_epochs        : int                  = config.NUM_EPOCHS,
+          model_type        : str                  = config.MODEL_TYPE,
+          accuracy_threshold: float                = config.ACCURACY_THRESHOLD,
+          patience          : float                = config.PATIENCE,
+          min_lr            : float                = config.MIN_LR,
+          grad_clip         : float                = config.GRAD_CLIP,
+          factor            : float                = config.FACTOR,
+          mode              : str                  = config.MODE,
+          *args) -> List[Tuple[str, FSMLDataLoader]]:
     r"""
     Run the training. The input `path` can be either a 
     path to a CSV file that contains the dataset, or to
@@ -336,11 +357,13 @@ def train(path              : str,
     :param batch_size: the Size of the batch for the dataloader
     :param k_fold: number of cross fold validation
     :param num_epochs: The total number of epochs
-    :param num_hidden_input: The number of hidden layer in input side
-    :param num_hidden_output: The number of hidden layer in output side
-    :param hidden_input_size: The number of neurons for each input hidden layer
-    :param hidden_output_size: The number of neurons for each output hidden layer
+    :param model_type: the type of the model to use
     :param accuracy_threshold: Stop when the current accuracy overcome a value
+    :param patience: Number of epochs with no improvement after which learning rate will be reduced
+    :param min_lr: A lower bound on the learning rate of all param groups
+    :param grad_clip: the gradient clipping value
+    :param factor: Factor by which the learning rate will be reduced
+    :param mode: The mode with the scheduler will reduce the learning rate
     :return: A list of tuple (model_path, dataloader)
     """
     # Check if the input path is a file or a folder
@@ -355,11 +378,9 @@ def train(path              : str,
     if opath.isfile(input_abspath):
         train_dataset = FSMLOneMeanStdDataset(input_abspath)
         return [__train_one(
-            train_dataset, criterion,
-            batch_size, k_fold, num_epochs,
-            num_hidden_input, num_hidden_output,
-            hidden_input_size, hidden_output_size,
-            accuracy_threshold
+            train_dataset, criterion, batch_size, 
+            k_fold, num_epochs, model_type, accuracy_threshold, 
+            patience, min_lr, grad_clip, factor, mode, *args
         )]
     
     # Otherwise it is a folder
@@ -371,11 +392,9 @@ def train(path              : str,
     for idx, train_dataset in enumerate(train_multi_dataset):
         print(f": ---------------- : ({idx}) Using {train_dataset.csv_file} : ---------------- :")
         output = __train_one(
-            train_dataset, criterion,
-            batch_size, k_fold, num_epochs,
-            num_hidden_input, num_hidden_output,
-            hidden_input_size, hidden_output_size,
-            accuracy_threshold
+            train_dataset, criterion, batch_size, 
+            k_fold, num_epochs, model_type, accuracy_threshold, 
+            patience, min_lr, grad_clip, factor, mode, *args
         )
         outputs.append(output)
 
