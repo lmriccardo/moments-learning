@@ -5,7 +5,7 @@ import fsml.learn.config as config
 
 
 def main() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00001_MeanStd.csv")
+    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00006_MeanStd.csv")
     kwargs = {
         "num_hidden_input"  :config.MLP_NUM_HIDDEN_INPUT,
         "num_hidden_output" :config.MLP_NUM_HIDDEN_OUTPUT,
@@ -19,7 +19,7 @@ def main() -> None:
 
 def test_better_mlp() -> None:
     import itertools
-    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00003_MeanStd.csv")
+    file = os.path.join(os.getcwd(), "data/meanstd/BIOMD00001_MeanStd.csv")
     values = [
         config.KF_POSSIBILITIES,
         config.MLP_NUM_HIDDEN_INPUT_POSSIBILITIES,
@@ -48,5 +48,5 @@ def test_better_mlp() -> None:
     print(f"Final Best Parameters: {current_best_params}")
 
 
-# main()
-# test_better()
+main()
+# test_better_mlp()

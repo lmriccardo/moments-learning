@@ -653,7 +653,7 @@ class TrajectoryTask:
             
             for variable in mean_std_variables.columns:
                 mean_std_variables_names.append(f"mean_{variable}".upper())
-                mean_std_variables_names.append(f"std_{variable}".upper())
+                mean_std_variables_names.append(f"var_{variable}".upper())
 
             # Then take the current values used for the parameter and add them to the np array
             current_parameters = self.modified_parameters_values[-1]

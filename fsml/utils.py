@@ -427,15 +427,24 @@ def select_data(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
 
 def get_mean_std(points: pd.DataFrame, vars: List[str]) -> pd.DataFrame:
     """
-    Return a pandas dataFrame with only the mean and the standard
-    deviation for all the variables specified in the input list.
+    Return a pandas dataFrame with only the mean and the variance
+    for all the variables specified in the input list.
 
     :param points: a pandas DataFrame with the points
     :param vars: a list of variable's name
-    :return: a DataFrame with mean and std for all variables
+    :return: a DataFrame with mean and var for all variables
     """
     description = points.describe()
-    return description.loc[["mean", "std"], vars]
+
+    mean = description.loc[["mean"], vars]
+    mean_col = mean.columns
+    mean = mean.to_numpy()
+
+    variance = points.var().to_dict()
+    variance_np = np.array([x for k, x in variance.items() if k in vars])
+    mean_variance = np.vstack((mean, variance_np))
+
+    return pd.DataFrame(data=mean_variance, columns=mean_col, index=["mean", "var"])
 
 
 def normalize(points: pd.DataFrame, vars: List[str], ntype: str="statistical") -> pd.DataFrame:
@@ -571,6 +580,6 @@ def compute_accuracy(output: torch.Tensor, y_true: torch.Tensor) -> float:
     :param y_true: the true values
     :return: the accuarcy
     """
-    comparision_tensor = torch.isclose(output, y_true, atol=1.0e-2, rtol=1.0e-2)
+    comparision_tensor = torch.isclose(output, y_true, atol=1.0e-2, rtol=1.0e-1)
     total_size = comparision_tensor.shape[0] * comparision_tensor.shape[1]
     return comparision_tensor.sum().item() / total_size

@@ -68,9 +68,7 @@ class Tester:
         return test_accuracy
     
 
-def test(paths_and_dataloaders: List[Tuple[str, FSMLDataLoader]],
-         model_type           : str = config.MODEL_TYPE,
-         **kwargs) -> List[float]:
+def test(paths_and_dataloaders: List[Tuple[str, FSMLDataLoader]], **kwargs) -> List[float]:
     r"""
     Run the testing phase against some pre-trained models.
 
@@ -84,7 +82,7 @@ def test(paths_and_dataloaders: List[Tuple[str, FSMLDataLoader]],
     final_accuracies = []
     for idx, (model_path, dataloader) in enumerate(paths_and_dataloaders):
         print(f": ---------------- : ({idx}) Test Model {model_path} : ---------------- :")
-        tester = Tester(model_path, dataloader, model_type, **kwargs)
+        tester = Tester(model_path, dataloader, **kwargs)
 
         final_acc = tester.test()
         print(f"FINAL ACCURACY: {final_acc * 100:.5f}")
