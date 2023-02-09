@@ -146,6 +146,7 @@ class Trainer:
         :param model_path: The path where to store the models
         :param imgs_path: the path where to store the images
         :param k_fold: number of KFold Cross Validation runs
+        :param reverse: reverse the dataset or not
         :param accuracy_threshold: Stop when the current accuracy overcome a value
         """
         self.train_dataset      = train_dataset
@@ -389,7 +390,7 @@ def train(path              : str,
         output = __train_one(
             train_dataset, criterion, batch_size, 
             k_fold, num_epochs, accuracy_threshold, 
-            patience, min_lr, grad_clip, factor, mode, 
+            patience, min_lr, grad_clip, factor, mode,
             **kwargs
         )
         outputs.append(output)

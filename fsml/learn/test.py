@@ -5,7 +5,6 @@ from fsml.learn.models.mlp import FSML_MLP_Predictor
 from fsml.utils import compute_accuracy
 import os.path as opath
 from typing import List, Tuple
-import fsml.learn.config as config
 
 
 class Tester:

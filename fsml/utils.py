@@ -1,4 +1,5 @@
-from typing import Tuple, List, Union, Optional, Callable
+from typing import Tuple, List, Union, Optional, Callable, Dict, Any
+from sklearn.ensemble import RandomForestRegressor
 import basico.biomodels as biomodels
 import matplotlib.pyplot as plt
 from basico import COPASI
@@ -583,3 +584,35 @@ def compute_accuracy(output: torch.Tensor, y_true: torch.Tensor) -> float:
     comparision_tensor = torch.isclose(output, y_true, atol=1.0e-2, rtol=1.0e-1)
     total_size = comparision_tensor.shape[0] * comparision_tensor.shape[1]
     return comparision_tensor.sum().item() / total_size
+
+
+def evaluate(model: RandomForestRegressor, test_data: np.ndarray, test_y: np.ndarray) -> float:
+    r"""
+    Evaluate the predictions produced by the model on the test data
+
+    :param model: The predictor
+    :param test_data: the data to test
+    :param test_y: the ground truth
+    :return: The accuracy
+    """
+    predictions = model.predict(test_data)
+    errors = np.abs(predictions - test_y)
+    mape = 100 * np.mean(errors / test_y)
+    accuracy = 100 - mape
+
+    print(f"Model Accuracy {accuracy:0.2f}%")
+
+    return accuracy
+
+
+def print_dict(dictionary: Dict[str, Any]) -> None:
+    r"""
+    Just a utility to print a Python Dictionary in a better way
+
+    :param dictionary: the dict to be printed
+    :return:
+    """
+    print("{")
+    for k, v in dictionary.items():
+        print(f"\t{k} = {v}")
+    print("}")

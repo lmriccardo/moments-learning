@@ -137,6 +137,7 @@ class FSMLOneMeanStdDataset(Dataset):
                f"   input_size={self.input_size},\n"   + \
                f"   output_size={self.output_size},\n" + \
                f"   train_size={self.train_size},\n"   + \
+               f"   reverse={self.reverse},\n"         + \
                f"   test_size={self.test_size}\n)"
     
     def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -155,6 +156,7 @@ class FSMLOneMeanStdDataset(Dataset):
         
         input_tensor  = torch.tensor(current_data[0][index], dtype=torch.float32)
         output_tensor = torch.tensor(current_data[1][index], dtype=torch.float32)
+
         return input_tensor, output_tensor, self.output_size
     
     def __iter__(self) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
@@ -299,6 +301,7 @@ class FSMLMeanStdDataset(Dataset):
                f"   max_outputs={self.max_outputs},\n"       + \
                f"   data_path={self.data_path},\n"           + \
                f"   train_size={self.train_size},\n"         + \
+               f"   reverse={self.reverse},\n"               + \
                f"   test_size={self.test_size}\n)"
     
     def __getitem_not_mixup(self, index) -> FSMLOneMeanStdDataset:
