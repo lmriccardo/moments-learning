@@ -10,6 +10,7 @@ import numpy as np
 import libsbml
 import random
 import torch
+import pydot
 import math
 import sys
 import os
@@ -595,9 +596,10 @@ def evaluate(model: RandomForestRegressor, test_data: np.ndarray, test_y: np.nda
     :param test_y: the ground truth
     :return: The accuracy
     """
+    test_y = np.array(test_y, dtype='float32')
     predictions = model.predict(test_data)
     errors = np.abs(predictions - test_y)
-    mape = 100 * np.mean(errors / test_y)
+    mape = 100 * np.mean(errors / (test_y + sys.float_info.epsilon))
     accuracy = 100 - mape
 
     print(f"Model Accuracy {accuracy:0.2f}%")

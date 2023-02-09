@@ -21,8 +21,13 @@ def main() -> None:
 
 
 def main_reverse() -> None:
-    condition = lambda x: x.endswith('.csv')
-    _, files = count_folder_elements(config.DATA_PATH, condition)
+    # condition = lambda x: x.endswith('.csv')
+    # _, files = count_folder_elements(config.DATA_PATH, condition)
+    
+    files = [
+        os.path.join(config.DATA_PATH, "BIOMD00005_MeanStd.csv"),
+        os.path.join(config.DATA_PATH, "BIOMD00007_MeanStd.csv")
+    ]
     
     for file in files:
         start_time = time.time()

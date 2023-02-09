@@ -13,7 +13,6 @@ from typing import Iterable, Tuple, List, Dict, Any
 from fsml.utils import read_csv_content, evaluate, print_dict
 import fsml.learn.config as config
 import os.path as opath
-import os
 import pickle
 
 
@@ -26,14 +25,17 @@ def split(columns: Iterable[str]) -> Tuple[List[str], List[str]]:
     return parameters, outputs
 
 
-def get_ranges(in_number: int) -> List[int]:
+def get_ranges(in_number: Any) -> List[int]:
     """ Given an integer it returns [i / 2, i, i + i / 2] """
+    if not isinstance(in_number, int):
+        return [in_number]
+    
     return [in_number // 2, in_number, in_number + in_number // 2]
 
 
 def save_model(estimator: RandomForestRegressor, filepath: str) -> None:
     """ Save the input model into the input file path """
-    with open(filepath, mode='rb') as iostream:
+    with open(filepath, mode='wb') as iostream:
         pickle.dump(estimator, iostream)
 
 

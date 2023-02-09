@@ -1,4 +1,4 @@
-from fsml.main import transform_and_simulate, transform_and_simulate_one
+from fsml.simulate.main import transform_and_simulate, transform_and_simulate_one
 import fsml.utils as utils
 import os.path as opath
 import os

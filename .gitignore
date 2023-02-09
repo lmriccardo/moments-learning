@@ -3,6 +3,8 @@ data/
 venv/
 log/
 runs/
+models/
+img/
 */__pycache__/
 */*/__pycache__/
 */*/*/__pycache__/
