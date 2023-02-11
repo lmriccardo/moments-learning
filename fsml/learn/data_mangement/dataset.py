@@ -357,7 +357,15 @@ def get_dataset_by_indices(
     src_dataset: FSMLOneMeanStdDataset, train_ids: List[int], test_ids: List[int]
 ) -> FSMLOneMeanStdDataset:
     r"""
-    
+    From an input already existing :class:`FSMLOneMeanStdDataset` create
+    a new dataset of the same type, by copying it, but selecting
+    only a portion of the train and test set. This portion is identified
+    by the input train indexes and test indexes.
+
+    :param src_dataset: The input already existing dataset
+    :param train_ids: The indexes for the new train set
+    :param test_ids: The indexes for the new test set
+    :return: a new dataset with "filtered" train and test set
     """
     # First copy the old dataset into the new one
     dataset = deepcopy(src_dataset)
