@@ -1,5 +1,7 @@
 # First and Second-order moments Learning
 
+[![Documentation Status](https://readthedocs.org/projects/moments-learning/badge/?version=latest)](https://moments-learning.readthedocs.io/en/latest/?badge=latest)
+
 FSML is the result of a project for the course *Automatic Verification Of Intelligent Systems* at the University of Rome "La Sapienza" A.A. 2022/2023. The first goal of this project is to create a simple Neural Network that is able to learn how to predict the *mean* and the *variance* from the fixed parameters of a time series model. The second objective is to experiment if it is also possible the inverse. 
 
 A more detailed version that explain the main reasons and the entire procedure that I setted up to complete the project can be found in the PDF report `report.pdf` in the root folder. 
