@@ -1,5 +1,5 @@
 from fsml.simulate.transform import convert_one
-from fsml.simulate import run_one
+from fsml.simulate.simulate import run_one
 from multiprocessing import Pool
 import fsml.utils as utils
 from typing import Dict

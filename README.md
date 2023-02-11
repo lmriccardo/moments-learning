@@ -71,4 +71,28 @@ $ pip install -r requirements.txt
 $ conda create -n venv python=3.10.8
 $ conda activate venv
 $ pip install -r requirements.txt
+``` 
+
+## Usage
+
+It is possible to use the project module in two different ways. Before proceeding with more technical details, the project is setup into two steps: first step to transform and simulate a model, second step for the learning stage. 
+
+### 1. Command-Line Usage
+
+First way, using the command line. To transform and simulate it is possible to take the availability of the `fsml.simulate` module using the following command `python -m fsml.simulate --help` and obtaining the following output.
+
+```bash
+usage: __main__.py [-h] -m MODEL [-s SIMS] [-l LOG] [-o OUTPUT] [-d DATA] [-p TEST]
+
+options:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        The ID of the BioModel wants to be simulated (default: None)
+  -s SIMS, --sims SIMS  The total number of simulations to be executed for that model (default: 2500)
+  -l LOG, --log LOG     The relative or absolute path to the log folder (default: ./log/)
+  -o OUTPUT, --output OUTPUT
+                        The relative or absolute path to the output folder (default: ./runs/)
+  -d DATA, --data DATA  The relative or absolute path to the data folder (default: ./data/)
+  -p TEST, --test TEST  The relative or absolute path to the test folder (default: ./tests/)
 ```
+
