@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fsml.learn.data_mangement package &mdash; FSML 1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="fsml.learn.models package" href="fsml.learn.models.html" />
+    <link rel="prev" title="fsml.learn package" href="fsml.learn.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            FSML
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">moments-learning</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="fsml.html">fsml package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="fsml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="fsml.learn.html">fsml.learn package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html">fsml.simulate package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.html#module-fsml.utils">fsml.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.html#module-fsml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FSML</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">moments-learning</a></li>
+          <li class="breadcrumb-item"><a href="fsml.html">fsml package</a></li>
+          <li class="breadcrumb-item"><a href="fsml.learn.html">fsml.learn package</a></li>
+      <li class="breadcrumb-item active">fsml.learn.data_mangement package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fsml.learn.data_mangement.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fsml-learn-data-mangement-package">
+<h1>fsml.learn.data_mangement package<a class="headerlink" href="#fsml-learn-data-mangement-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-fsml.learn.data_mangement.dataloader">
+<span id="fsml-learn-data-mangement-dataloader-module"></span><h2>fsml.learn.data_mangement.dataloader module<a class="headerlink" href="#module-fsml.learn.data_mangement.dataloader" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataloader.FSMLDataLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fsml.learn.data_mangement.dataloader.</span></span><span class="sig-name descname"><span class="pre">FSMLDataLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLMeanStdDataset"><span class="pre">FSMLMeanStdDataset</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><span class="pre">FSMLOneMeanStdDataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fsml.learn.data_mangement.dataloader.FSMLDataLoader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code></p>
+<p>Just a custom dataloader for our dataset</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataloader.collate">
+<span class="sig-prename descclassname"><span class="pre">fsml.learn.data_mangement.dataloader.</span></span><span class="sig-name descname"><span class="pre">collate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Generic</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.learn.data_mangement.dataloader.collate" title="Permalink to this definition"></a></dt>
+<dd><p>A function that replace the default collate function of the DataLoader.
+This function takes as input a batch of any size and creates two tensor
+by just vstacking all the input datas and the output datas.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>_batch</strong> – The current given as input by the dataloader</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(Input data, Output data)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-fsml.learn.data_mangement.dataset">
+<span id="fsml-learn-data-mangement-dataset-module"></span><h2>fsml.learn.data_mangement.dataset module<a class="headerlink" href="#module-fsml.learn.data_mangement.dataset" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataset.FSMLMeanStdDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fsml.learn.data_mangement.dataset.</span></span><span class="sig-name descname"><span class="pre">FSMLMeanStdDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mixup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fsml.learn.data_mangement.dataset.FSMLMeanStdDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
+<p>A class for the <a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLMeanStdDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FSMLMeanStdDataset</span></code></a></p>
+<p>This dataset represent a mix of different dataset, where each
+of the single dataset is given by a CSV file contained in the
+input <cite>data_path</cite>. This dataset can be used to train a number
+of different models, one per dataset, or a single model on the
+entire dataset, where the entire dataset merge all the N
+dataset contained. This mixing is given by a parameter called
+<cite>mixup</cite>. In the case <cite>mixup</cite> is true then the method <cite>__getitem__</cite>
+will return a mixture of samples.</p>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading"></a></h3>
+<dl>
+<dt>files<span class="classifier">List[str]</span></dt><dd><p>A list with all the files</p>
+</dd>
+<dt>num_files<span class="classifier">int</span></dt><dd><p>The total number of files in the folder</p>
+</dd>
+<dt>count_per_file<span class="classifier">Dict[str, int]</span></dt><dd><p>Count the total number of elements for that file</p>
+</dd>
+<dt>train_datasets<span class="classifier">List[<a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FSMLOneMeanStdDataset</span></code></a>]</span></dt><dd><p>A list with all the dataset for training</p>
+</dd>
+<dt>test_datasets<span class="classifier">List[<a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FSMLOneMeanStdDataset</span></code></a>]</span></dt><dd><p>A list with all the dataset for testing</p>
+</dd>
+<dt>max_parameters<span class="classifier">int</span></dt><dd><p>The number of maximum parameters overall (from the different dataset)</p>
+</dd>
+<dt>max_outputs<span class="classifier">int</span></dt><dd><p>The number of maximum output shape overall (from the different dataset)</p>
+</dd>
+<dt>total_data<span class="classifier">int</span></dt><dd><p>The total amount of data mixing all the datasets</p>
+</dd>
+<dt>train_size<span class="classifier">int </span></dt><dd><p>The total amount of training data</p>
+</dd>
+<dt>test_size<span class="classifier">int</span></dt><dd><p>The total amount of test data</p>
+</dd>
+<dt>is_train<span class="classifier">bool</span></dt><dd><p>True then use the training data, False use test data</p>
+</dd>
+</dl>
+</section>
+<section id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>test(self) -&gt; None</dt><dd><p>Set the dataset for testing instead of training</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataset.FSMLMeanStdDataset.test">
+<span class="sig-name descname"><span class="pre">test</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.learn.data_mangement.dataset.FSMLMeanStdDataset.test" title="Permalink to this definition"></a></dt>
+<dd><p>Set the dataset for testing instead of training</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fsml.learn.data_mangement.dataset.</span></span><span class="sig-name descname"><span class="pre">FSMLOneMeanStdDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csv_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
+<p>This class represent a <a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FSMLOneMeanStdDataset</span></code></a>.</p>
+<p>A class to represent the dataset of all the simulations. Essentially
+the dataset is structured such that, on request (i.e. indexing) or 
+on iteration it returns a couple of elements, where the first element
+represent the input of the neural network, while the second will be
+the ground trouth that will be used to compare the output of the NN
+against it and thus compute the loss and update the optimizer.</p>
+<p>The dataset is initialized with just the fully qualified path that
+points to the folder containing the result of all the simulations
+that have been performed previously. In that folder there would be
+a bunch of CSV files that contains a single row for each simulation
+of the same model, and a bunch of columns (with a lowercase name)
+representing the parameters of the model, and a bunch of (uppercase)
+columns representing the mean and the standard deviation of species.</p>
+<p>The on indexing, i.e. call the <code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__()</span></code> method with an index <cite>i</cite>
+as input the dataset will returns a tuple with just two elements, where
+the first are the input of the neural networks and are composed by the
+parameters of the model, while the second represents the ground trouth
+values is composed by the mean and the standard deviations.</p>
+<section id="id1">
+<h3>Attributes<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>csv_file<span class="classifier">str</span></dt><dd><p>the input path of the CSV file with the data</p>
+</dd>
+<dt>input_data<span class="classifier">List[List[float]]</span></dt><dd><p>A list with all the input data (parameters)</p>
+</dd>
+<dt>input_size<span class="classifier">int</span></dt><dd><p>The size of the input data (i.e. the number points in a single tensor)</p>
+</dd>
+<dt>output_data<span class="classifier">List[List[float]]</span></dt><dd><p>A list with all the output data (mean and std for each specie)</p>
+</dd>
+<dt>output_size<span class="classifier">int</span></dt><dd><p>The size of the output data (i.e. the number points in a single tensor)</p>
+</dd>
+<dt>num_data<span class="classifier">int</span></dt><dd><p>The total number of samples</p>
+</dd>
+<dt>parameters<span class="classifier">List[str]</span></dt><dd><p>A list with all parameters name</p>
+</dd>
+<dt>outputs<span class="classifier">List[str]</span></dt><dd><p>A list with all the output names</p>
+</dd>
+<dt>train_data<span class="classifier">Tuple[List[List[float]], List[float]]</span></dt><dd><p>A list with all the train data</p>
+</dd>
+<dt>test_data<span class="classifier">Tuple[List[List[float]], List[float]]</span></dt><dd><p>A list with all the test data</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset.test">
+<span class="sig-name descname"><span class="pre">test</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset.test" title="Permalink to this definition"></a></dt>
+<dd><p>Set the dataset for testing</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.learn.data_mangement.dataset.get_dataset_by_indices">
+<span class="sig-prename descclassname"><span class="pre">fsml.learn.data_mangement.dataset.</span></span><span class="sig-name descname"><span class="pre">get_dataset_by_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><span class="pre">FSMLOneMeanStdDataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><span class="pre">FSMLOneMeanStdDataset</span></a></span></span><a class="headerlink" href="#fsml.learn.data_mangement.dataset.get_dataset_by_indices" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-fsml.learn.data_mangement">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fsml.learn.data_mangement" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fsml.learn.html" class="btn btn-neutral float-left" title="fsml.learn package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fsml.learn.models.html" class="btn btn-neutral float-right" title="fsml.learn.models package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Riccardo La Marca.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

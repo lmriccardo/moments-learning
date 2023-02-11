@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fsml package &mdash; FSML 1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="fsml.learn package" href="fsml.learn.html" />
+    <link rel="prev" title="moments-learning" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            FSML
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">moments-learning</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">fsml package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.html">fsml.learn package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html">fsml.simulate package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-fsml.utils">fsml.utils module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.Errors"><code class="docutils literal notranslate"><span class="pre">Errors</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.compute_accuracy"><code class="docutils literal notranslate"><span class="pre">compute_accuracy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.compute_percent"><code class="docutils literal notranslate"><span class="pre">compute_percent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.count_folder_elements"><code class="docutils literal notranslate"><span class="pre">count_folder_elements()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.download_model"><code class="docutils literal notranslate"><span class="pre">download_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.evaluate"><code class="docutils literal notranslate"><span class="pre">evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.find_indexes"><code class="docutils literal notranslate"><span class="pre">find_indexes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.get_mean_std"><code class="docutils literal notranslate"><span class="pre">get_mean_std()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.get_ranges"><code class="docutils literal notranslate"><span class="pre">get_ranges()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.handle_run_errors"><code class="docutils literal notranslate"><span class="pre">handle_run_errors()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.handle_sbml_errors"><code class="docutils literal notranslate"><span class="pre">handle_sbml_errors()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.load_model"><code class="docutils literal notranslate"><span class="pre">load_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.load_report"><code class="docutils literal notranslate"><span class="pre">load_report()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.load_sbml"><code class="docutils literal notranslate"><span class="pre">load_sbml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.normalize"><code class="docutils literal notranslate"><span class="pre">normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.plot"><code class="docutils literal notranslate"><span class="pre">plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.print_dict"><code class="docutils literal notranslate"><span class="pre">print_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.print_errors"><code class="docutils literal notranslate"><span class="pre">print_errors()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.print_parameters"><code class="docutils literal notranslate"><span class="pre">print_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.print_species"><code class="docutils literal notranslate"><span class="pre">print_species()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.read_csv_content"><code class="docutils literal notranslate"><span class="pre">read_csv_content()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.read_paths_file"><code class="docutils literal notranslate"><span class="pre">read_paths_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.remove_original"><code class="docutils literal notranslate"><span class="pre">remove_original()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.save_model"><code class="docutils literal notranslate"><span class="pre">save_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.select_data"><code class="docutils literal notranslate"><span class="pre">select_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.setup_seed"><code class="docutils literal notranslate"><span class="pre">setup_seed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.to_integral"><code class="docutils literal notranslate"><span class="pre">to_integral()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.to_string"><code class="docutils literal notranslate"><span class="pre">to_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fsml.utils.write_paths"><code class="docutils literal notranslate"><span class="pre">write_paths()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-fsml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FSML</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">moments-learning</a></li>
+      <li class="breadcrumb-item active">fsml package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fsml.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fsml-package">
+<h1>fsml package<a class="headerlink" href="#fsml-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fsml.learn.html">fsml.learn package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.data_mangement.html">fsml.learn.data_mangement package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.data_mangement.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.data_mangement.html#module-fsml.learn.data_mangement.dataloader">fsml.learn.data_mangement.dataloader module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.data_mangement.html#module-fsml.learn.data_mangement.dataset">fsml.learn.data_mangement.dataset module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.data_mangement.html#module-fsml.learn.data_mangement">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.models.html">fsml.learn.models package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.models.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.models.html#module-fsml.learn.models.mlp">fsml.learn.models.mlp module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.models.html#module-fsml.learn.models">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#module-fsml.learn.config">fsml.learn.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#module-fsml.learn.reverse">fsml.learn.reverse module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.reverse.get_ranges"><code class="docutils literal notranslate"><span class="pre">get_ranges()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.reverse.perform_grid_search"><code class="docutils literal notranslate"><span class="pre">perform_grid_search()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.reverse.perform_random_search"><code class="docutils literal notranslate"><span class="pre">perform_random_search()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.reverse.save_model"><code class="docutils literal notranslate"><span class="pre">save_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.reverse.split"><code class="docutils literal notranslate"><span class="pre">split()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.reverse.train_and_test"><code class="docutils literal notranslate"><span class="pre">train_and_test()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#module-fsml.learn.test">fsml.learn.test module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.test.Tester"><code class="docutils literal notranslate"><span class="pre">Tester</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.html#fsml.learn.test.Tester.test"><code class="docutils literal notranslate"><span class="pre">Tester.test()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.test.test"><code class="docutils literal notranslate"><span class="pre">test()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#module-fsml.learn.train">fsml.learn.train module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.KFoldCrossValidationWrapper"><code class="docutils literal notranslate"><span class="pre">KFoldCrossValidationWrapper</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.KFoldCrossValidationWrapper.kFoldValidation"><code class="docutils literal notranslate"><span class="pre">KFoldCrossValidationWrapper.kFoldValidation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.KFoldCrossValidationWrapper.setup_kFold_validation"><code class="docutils literal notranslate"><span class="pre">KFoldCrossValidationWrapper.setup_kFold_validation()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.Trainer.plot"><code class="docutils literal notranslate"><span class="pre">Trainer.plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.Trainer.run"><code class="docutils literal notranslate"><span class="pre">Trainer.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.learn.html#fsml.learn.train.train"><code class="docutils literal notranslate"><span class="pre">train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.learn.html#module-fsml.learn">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fsml.simulate.html">fsml.simulate package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fsml.simulate.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.simulate.html#module-fsml.simulate.main">fsml.simulate.main module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.main.transform_and_simulate"><code class="docutils literal notranslate"><span class="pre">transform_and_simulate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.main.transform_and_simulate_one"><code class="docutils literal notranslate"><span class="pre">transform_and_simulate_one()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.simulate.html#module-fsml.simulate.simulate">fsml.simulate.simulate module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.ParameterSampler"><code class="docutils literal notranslate"><span class="pre">ParameterSampler</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.ParameterSampler.generate"><code class="docutils literal notranslate"><span class="pre">ParameterSampler.generate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.ParameterSamplerConfiguration"><code class="docutils literal notranslate"><span class="pre">ParameterSamplerConfiguration</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.ParameterSamplerConfiguration.percentage_of_change"><code class="docutils literal notranslate"><span class="pre">ParameterSamplerConfiguration.percentage_of_change</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.ParameterSamplerConfiguration.total_number_of_sample"><code class="docutils literal notranslate"><span class="pre">ParameterSamplerConfiguration.total_number_of_sample</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.ParameterSamplerConfiguration.total_sample_per_param"><code class="docutils literal notranslate"><span class="pre">ParameterSamplerConfiguration.total_sample_per_param</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.abs_tolerance"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.abs_tolerance</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.automatic_step_size"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.automatic_step_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.data_path"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.data_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.gen_time_series"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.gen_time_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.initial_time"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.initial_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.output_event"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.output_event</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.rel_tolerance"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.rel_tolerance</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.report_fixed_species"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.report_fixed_species</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.report_out_stype"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.report_out_stype</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.sim_horizon"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.sim_horizon</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TaskConfiguration.step_size"><code class="docutils literal notranslate"><span class="pre">TaskConfiguration.step_size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.get_model"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.get_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.get_used_parameters"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.get_used_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.load_model"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.load_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.print_informations"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.print_informations()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.print_results"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.print_results()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.run"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.run_task"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.run_task()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.TrajectoryTask.setup_task"><code class="docutils literal notranslate"><span class="pre">TrajectoryTask.setup_task()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.create_report"><code class="docutils literal notranslate"><span class="pre">create_report()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.generate_default_configuration"><code class="docutils literal notranslate"><span class="pre">generate_default_configuration()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.generate_default_param_sampler_configuration"><code class="docutils literal notranslate"><span class="pre">generate_default_param_sampler_configuration()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.generate_taskid"><code class="docutils literal notranslate"><span class="pre">generate_taskid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.run_one"><code class="docutils literal notranslate"><span class="pre">run_one()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.simulate.run_simulations"><code class="docutils literal notranslate"><span class="pre">run_simulations()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.simulate.html#module-fsml.simulate.transform">fsml.simulate.transform module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.transform.add_amount_species"><code class="docutils literal notranslate"><span class="pre">add_amount_species()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.transform.convert_models"><code class="docutils literal notranslate"><span class="pre">convert_models()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.transform.convert_one"><code class="docutils literal notranslate"><span class="pre">convert_one()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.transform.sbml_to_raterules"><code class="docutils literal notranslate"><span class="pre">sbml_to_raterules()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.transform.transform"><code class="docutils literal notranslate"><span class="pre">transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fsml.simulate.html#fsml.simulate.transform.transform_model"><code class="docutils literal notranslate"><span class="pre">transform_model()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fsml.simulate.html#module-fsml.simulate">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-fsml.utils">
+<span id="fsml-utils-module"></span><h2>fsml.utils module<a class="headerlink" href="#module-fsml.utils" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fsml.utils.Errors">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">Errors</span></span><a class="headerlink" href="#fsml.utils.Errors" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fsml.utils.Errors.CONVERSION_ERROR">
+<span class="sig-name descname"><span class="pre">CONVERSION_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#fsml.utils.Errors.CONVERSION_ERROR" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fsml.utils.Errors.FILE_NOT_EXISTS">
+<span class="sig-name descname"><span class="pre">FILE_NOT_EXISTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#fsml.utils.Errors.FILE_NOT_EXISTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fsml.utils.Errors.XML_READ_ERROR">
+<span class="sig-name descname"><span class="pre">XML_READ_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#fsml.utils.Errors.XML_READ_ERROR" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.compute_accuracy">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">compute_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fsml.utils.compute_accuracy" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the accuracy between the output of the
+predictor and the y_true values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output</strong> – the output from the predictor</p></li>
+<li><p><strong>y_true</strong> – the true values</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the accuarcy</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.compute_percent">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">compute_percent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#fsml.utils.compute_percent" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the input percentage of the input array</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.count_folder_elements">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">count_folder_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">path:</span> <span class="pre">str,</span> <span class="pre">condition:</span> <span class="pre">~typing.Callable[[str],</span> <span class="pre">bool]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.utils.count_folder_elements" title="Permalink to this definition"></a></dt>
+<dd><p>Given the absolute path to a folder count the total
+number of files, folder and all the other types of
+possible content inside that folder. Notice that
+this counting operation can be altered given as input
+also a condition that each element should satisfy,
+for example: that element is a file or a folder, etc.</p>
+<p>:param path     : A fully qualified path to a folder
+:param condition: The condition to apply at each element
+:return: The number of element satisfing that condition</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.download_model">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">download_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#fsml.utils.download_model" title="Permalink to this definition"></a></dt>
+<dd><p>Download a SBML model given the ID from the BioModels Database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> – the ID of the model that needs to be downloaded</p></li>
+<li><p><strong>prefix_path</strong> – the folder where store the new model</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the path where the model has been stored</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.evaluate">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">RandomForestRegressor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fsml.utils.evaluate" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate the predictions produced by the model on the test data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The predictor</p></li>
+<li><p><strong>test_data</strong> – the data to test</p></li>
+<li><p><strong>test_y</strong> – the ground truth</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The accuracy</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.find_indexes">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">find_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'time'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.utils.find_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Given a Pandas dataframe returns a list of indexes such that
+at each index the value of the input column <cite>col_name</cite>
+is equal to the input value <cite>reset_value</cite>.</p>
+<p>:param df      : the Pandas Dataframe
+:param col_name: The name of the column to be checked
+:param value   : The value to be checked
+:return: a list of indexes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.get_mean_std">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">get_mean_std</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#fsml.utils.get_mean_std" title="Permalink to this definition"></a></dt>
+<dd><p>Return a pandas dataFrame with only the mean and the variance
+for all the variables specified in the input list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> – a pandas DataFrame with the points</p></li>
+<li><p><strong>vars</strong> – a list of variable’s name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a DataFrame with mean and var for all variables</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.get_ranges">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">get_ranges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.utils.get_ranges" title="Permalink to this definition"></a></dt>
+<dd><p>Given a maximum horizon and the number of cpus return a number
+of ranges between the max number and the cpu count. The number of 
+returned ranges is exactly (nmax / cpu_count) if nmax is a
+multiple of cpu_count, otherwise it is (nmax / cpu_count) + (nmax % cpu_count).</p>
+<dl>
+<dt>example:</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_ranges</span><span class="p">(</span><span class="mi">67</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+<span class="go">[[0, 16], [16, 32], [32, 48], [48, 64], [64, 67]]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nmax</strong> – the maximum horizon</p></li>
+<li><p><strong>cpu_count</strong> – the total number of cpus</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a list containing all the ranges</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.handle_run_errors">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">handle_run_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.handle_run_errors" title="Permalink to this definition"></a></dt>
+<dd><p>Print error messages from COPASI when the trajectory task failed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>task_id</strong> – the ID of the task that call this function</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.handle_sbml_errors">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">handle_sbml_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SBMLDocument</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.handle_sbml_errors" title="Permalink to this definition"></a></dt>
+<dd><p>Takes as input an integer that represent the output
+code from a SBML function. If the code is different
+from <cite>libsbml.LIBSBML_OPERATION_SUCCESS</cite> than print
+all the errors and raise a ValueError exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>document</strong> – a handle to the SBML document</p>
+</dd>
+</dl>
+<p>:param result  : the output code
+:return:</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.load_model">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_to_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">CModel</span></span></span><a class="headerlink" href="#fsml.utils.load_model" title="Permalink to this definition"></a></dt>
+<dd><p>Load the SBML model from a filename to a COPASI Model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path_to_model</strong> – the absolute path to the SBML model file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a handle to the respective COPASI model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.load_report">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">load_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#fsml.utils.load_report" title="Permalink to this definition"></a></dt>
+<dd><p>Load the report file into a pandas DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>report</strong> – the path to the report file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a pandas DataFrame with the report</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.load_sbml">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">load_sbml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sbmlpath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SBMLDocument</span></span></span><a class="headerlink" href="#fsml.utils.load_sbml" title="Permalink to this definition"></a></dt>
+<dd><p>Given an SBML file with the absolute path load the file as an SBML document</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sbmlpath</strong> – the absolute path to the SBML file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a handler to the SBMLDocument given by the SBML file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.normalize">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'statistical'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#fsml.utils.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize each point (pointed by vars) in the input dataframe
+with the usual formula: z = (x - mean) / std. Then return
+the newly created and normalized dataframe. The applied 
+normalization depends on the input type: “statistical” means
+the one with mean and std. deviation; “classical” means between
+0 and 1, i.e., take the min value away and divide by the
+difference between the max and the min.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> – a pandas DataFrame with the points</p>
+</dd>
+</dl>
+<p>:param vars  : a list of variable’s name
+:param model : a handle to the COPASI Model
+:param ntype : (optional) normalization type “statistical” or “classical”
+:return: the normalized dataframe</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.plot">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.plot" title="Permalink to this definition"></a></dt>
+<dd><p>Plot one or more variables given a matrix of points</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> – a pandas DataFrame with the points</p></li>
+<li><p><strong>vars</strong> – a list of variable names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.print_dict">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">print_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.print_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Just a utility to print a Python Dictionary in a better way</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dictionary</strong> – the dict to be printed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.print_errors">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">print_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SBMLDocument</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nerrors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.print_errors" title="Permalink to this definition"></a></dt>
+<dd><p>Print all the errors for a given SBML document</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>doc</strong> – A handle to the SBML document</p></li>
+<li><p><strong>nerrors</strong> – The number of errors to be printed</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.print_parameters">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">print_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foutput</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.print_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Print information about all the parameters of the model on file or std output.
+Whenever the output file is given, the content will be writte in CSV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – a handle to a COPASI model</p></li>
+<li><p><strong>foutput</strong> – an optional file where the write the output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.print_species">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">print_species</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foutput</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.print_species" title="Permalink to this definition"></a></dt>
+<dd><p>Print all the species of the Model inside a file or on the std output.
+Whenever the output file is given, the content will be writte in CSV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – the COPASI Model</p></li>
+<li><p><strong>foutput</strong> – an optional file where the write the output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.read_csv_content">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">read_csv_content</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csv_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.utils.read_csv_content" title="Permalink to this definition"></a></dt>
+<dd><p>Given a CSV file as input, it counts the number of
+rows of the file. Obvioulsy not of the file itself,
+but only of the matrix. Essentially, we do not
+consider the header.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>csv_path</strong> – the fully qualified path to the CSV file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the number of elements of the CSV and the CSV content</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.read_paths_file">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">read_paths_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.utils.read_paths_file" title="Permalink to this definition"></a></dt>
+<dd><p>Read the content of the paths file. The file contains for each
+row the current path of a model inside a folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paths_file</strong> – the absolute path to the file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a list with all the paths</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.remove_original">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">remove_original</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.remove_original" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the original model files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paths</strong> – the list with all the output paths</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.save_model">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.save_model" title="Permalink to this definition"></a></dt>
+<dd><p>Write a SBML Model inside a file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – a handle to the SBML model</p></li>
+<li><p><strong>path</strong> – a string representing the output path</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.select_data">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">select_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#fsml.utils.select_data" title="Permalink to this definition"></a></dt>
+<dd><p>Select all the points in the dataframe that matches the
+names in the input <cite>vars</cite> list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>points</strong> – the dataframe with all the points</p>
+</dd>
+</dl>
+<p>:param vars  : the name of the column to consider
+:return: the selected points</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.setup_seed">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">setup_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.setup_seed" title="Permalink to this definition"></a></dt>
+<dd><p>Just setup the seed for the experiments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seed</strong> – the seed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.to_integral">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">to_integral</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fsml.utils.to_integral" title="Permalink to this definition"></a></dt>
+<dd><p>Given a list of parameters convert each parameter from the 
+original value to a value between 1 and 9. That is, given
+a parameter value x we obtain z = x / (10 ** int(log10(x))).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> – the list with all the parameters value</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the new list of parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.to_string">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#fsml.utils.to_string" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a Numpy vector to a string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vector</strong> – the input vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the string representation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fsml.utils.write_paths">
+<span class="sig-prename descclassname"><span class="pre">fsml.utils.</span></span><span class="sig-name descname"><span class="pre">write_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.utils.write_paths" title="Permalink to this definition"></a></dt>
+<dd><p>Save the list of paths inside a file: one path per row</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paths</strong> – the list with all the paths</p></li>
+<li><p><strong>output_path</strong> – the file where to store the pats</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-fsml">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fsml" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="moments-learning" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fsml.learn.html" class="btn btn-neutral float-right" title="fsml.learn package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Riccardo La Marca.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
