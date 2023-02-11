@@ -136,6 +136,10 @@ In this example the command will run the learning procedure (train + test) for a
 $ python -m fsml.learn -d ./data/ --reverse --grid-search --cv 3
 ```
 
+In this case the inverse problem will be solved for each dataset in the input data folder using a Random Forest Regression method. Moreover, a grid search hyper-parameter tuning method is using with 3 Cross Validation. 
+
+All the configurations for both the original and the inverse problems can be found in the configuration file [`config.py`](./fsml/learn/config.py). If you wants to change some configuration you can either directly modify the configuration file, or use the *Python Script* method. 
+
 ### 2. Python Module Usage
 
 Second way, from the PIE (Python Interactive Environment) or a Python Script. This is an example to download, transform and simulate a single model multiple times.
@@ -169,3 +173,82 @@ transform_and_simulate_one(prefix_path=test_dir,
                            job_id=0,
                            gen_do=False)
 ```
+
+This is an example to train and test the FSML learning model on a folder of dataset for the original problem
+
+```python
+import torch.nn as nn
+
+# USE fsml_ prefix to avoid conflict
+from fsml.learn.train import train as fsml_train
+from fsml.leran.test import test as fsml_test
+import fsml.learn.config as fsml_config
+import os.path as opath
+import os
+
+# Get the folder with all the datasets
+data = opath.join(os.getcwd(), "data/")
+
+# Define some arguments
+kwargs = {
+    "num_hidden_input"   : fsml_config.MLP_NUM_HIDDEN_INPUT,
+    "num_hidden_output"  : fsml_config.MLP_NUM_HIDDEN_OUTPUT,
+    "hidden_input_size"  : fsml_config.MLP_HIDDEN_INPUT_SIZE,
+    "hidden_output_size" : fsml_config.MLP_HIDDEN_OUTPUT_SIZE
+}
+
+# Learn the train and retrieve the model path and
+# and the dataloader for each trained model
+outputs = fsml_train(data, criterion=nn.L1Loss,
+                           batch_size=32,
+                           k_fold=fsml_config.KF_SPLIT,
+                           num_epochs=100,
+                           patience=5,
+                           **kwargs)
+
+# Then just test
+_ = fsml_test(outputs, **kwargs)
+```
+
+Finally, this is an example to solve the inverse problem with some changed configuration
+
+```python
+from fsml.learn.reverse import train_and_test as fsml_train_and_test
+from fsml.utils import count_folder_elements
+import fsml.learn.config as fsml_config
+import os.path as opath
+import time
+
+# Changing the number of CV for the random search
+global fsml_config.RAND_SEARCH_NUM_CROSS_VALIDATION
+fsml_config.RAND_SEARCH_NUM_CROSS_VALIDATION = 5
+
+# Changing the Random Search Boostrap possibilities to [True]
+global fsml_config.RAND_SEARCH_BOOSTRAP
+fsml_config.RAND_SEARCH_BOOSTRAP = [True]
+
+# We can do this for all possibile configurations ... 
+
+# Retrieve all the CSV files from the default Data Path
+condition = lambda x: x.endswith(".csv")
+_, files = count_folder_elements(config.DATA_PATH, condition)
+
+# Iterate through all the files and run the learning procedure
+for dataset_file in files:
+    start_time = time.time()
+    print(f":-----------: Solving reverse problem for {dataset_file} :-----------:")
+
+    # Launch the procedure
+    trained_model = fsml_train_and_test(dataset_file,
+                                        random_search=True,
+                                        grid_search=True)
+
+    final_time = time.time() - start_time
+    print(f"Process Ended in {final_time:0.3f} seconds")
+```
+
+### 3. Final Notes on Usability
+
+Obviously there are many way in which a possible user can use this module. In all the previous examples I decided to show how to use some built-in modules like `transform_and_simulate_one` to transform and simulate, in the way I decided, a biomodel, or the `train` and `test` functions in the learning stage (for the original problem). 
+
+In general, while using the command line utilities my goal is to make the user to be able to run the same experiments that I did, with the FSML module in a Python Script the user can do whatever he wants and decide its own workflow. For example, he can creates a custom `train` and `test` function using directly the `FSMLOneMeanStdDataset` or the `FSMLMeanStdDataset`, the `FSMLDataLoader` that are contained in the `fsml.learn.data_management` package. For more informations about the inner class and functions you can directly read the module documentation. 
