@@ -8,8 +8,13 @@ import time
 import argparse
 
 
-def learn() -> None:
-    file = os.path.join(os.getcwd(), "data/meanstd/")
+def learn(data_file    : str, 
+          num_batch    : int, 
+          num_epochs   : int, 
+          lr           : float,
+          cv           : int, 
+          acc_threshold: float
+) -> None:
     kwargs = {
         "num_hidden_input"  :config.MLP_NUM_HIDDEN_INPUT,
         "num_hidden_output" :config.MLP_NUM_HIDDEN_OUTPUT,
@@ -17,23 +22,31 @@ def learn() -> None:
         "hidden_output_size":config.MLP_HIDDEN_OUTPUT_SIZE
     }
 
-    outputs = train(file, **kwargs)
+    outputs = train(data_file, 
+                    batch_size=num_batch, 
+                    num_epochs=num_epochs,
+                    lr=lr,
+                    k_fold=cv,
+                    accuracy_threshold=acc_threshold,
+                    **kwargs)
+    
     _ = test(outputs, **kwargs)
 
 
-def learn_reverse() -> None:
-    # condition = lambda x: x.endswith('.csv')
-    # _, files = count_folder_elements(config.DATA_PATH, condition)
-    
-    files = [
-        os.path.join(config.DATA_PATH, "BIOMD00005_MeanStd.csv"),
-        os.path.join(config.DATA_PATH, "BIOMD00007_MeanStd.csv")
-    ]
+def learn_reverse(data_file: str, grid_search: bool, random_search: bool, cv: int) -> None:
+    if os.path.isfile(data_file):
+        files = [data_file]
+    else:
+        condition = lambda x: x.endswith('.csv')
+        _, files = count_folder_elements(data_file, condition)
+
+    config.RAND_SEARCH_NUM_CROSS_VALIDATION = cv
+    config.GRID_SEARCH_NUM_CROSS_VALIDATION = cv
     
     for file in files:
         start_time = time.time()
         print("-" * 50 + " " + file + " " + "-" * 50)
-        model = train_and_test(file, grid_search=True)
+        model = train_and_test(file, grid_search=grid_search, random_search=random_search)
         print(f"[*] Model saved at {model}")
         
         final_time = time.time() - start_time
@@ -82,6 +95,23 @@ def main() -> None:
     
     args = argument_parser.parse_args()
 
-    print(args.data)
+    data_path     = os.path.abspath(args.data)
+    reverse       = args.reverse
+    batches       = args.batches
+    lr            = args.lr
+    epochs        = args.epochs
+    cv            = args.cv
+    acc_threshold = args.acc_threshold
+    grid_search   = args.grid_search
+    random_search = args.random_search
+
+    # If not reverse then the original problem must be solved
+    if not reverse:
+        learn(data_path, batches, epochs, lr, cv, acc_threshold)
+        return
+    
+    # Otherwise solve for the reverse problem
+    learn_reverse(data_path, grid_search, random_search, cv)
+
 
 main()

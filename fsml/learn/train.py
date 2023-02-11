@@ -272,6 +272,7 @@ class Trainer:
 def __train_one(train_dataset     : FSMLOneMeanStdDataset,
                 criterion         : _Loss | _WeightedLoss,
                 batch_size        : int,
+                lr                : float,
                 k_fold            : int,
                 num_epochs        : int,
                 accuracy_threshold: float,
@@ -307,7 +308,7 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
 
     print("[*] Creating the Adam Optimizer and the LR scheduler")
     optimizer = optim.Adam(
-        predictor.parameters(), lr=config.LR, weight_decay=config.WEIGHT_DECAY)
+        predictor.parameters(), lr=lr, weight_decay=config.WEIGHT_DECAY)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer, mode=mode, factor=factor,
         patience=patience, verbose=True, min_lr=min_lr)
@@ -331,6 +332,7 @@ def __train_one(train_dataset     : FSMLOneMeanStdDataset,
 def train(path              : str,
           criterion         : _Loss | _WeightedLoss= config.CRITERION,
           batch_size        : int                  = config.BATCH_SIZE,
+          lr                : float                = config.LR,
           k_fold            : int                  = config.KF_SPLIT,
           num_epochs        : int                  = config.NUM_EPOCHS,
           accuracy_threshold: float                = config.ACCURACY_THRESHOLD,
@@ -351,6 +353,7 @@ def train(path              : str,
     :param path: the path to a CSV file or CSV folder
     :param criterion: the PyTorch type of loss (or a custom one)
     :param batch_size: the Size of the batch for the dataloader
+    :param lr: initial learning rate
     :param k_fold: number of cross fold validation
     :param num_epochs: The total number of epochs
     :param accuracy_threshold: Stop when the current accuracy overcome a value
@@ -373,7 +376,7 @@ def train(path              : str,
     if opath.isfile(input_abspath):
         train_dataset = FSMLOneMeanStdDataset(input_abspath)
         return [__train_one(
-            train_dataset, criterion, batch_size, 
+            train_dataset, criterion, batch_size, lr,
             k_fold, num_epochs, accuracy_threshold, 
             patience, min_lr, grad_clip, factor, mode, 
             **kwargs
@@ -388,7 +391,7 @@ def train(path              : str,
     for idx, train_dataset in enumerate(train_multi_dataset):
         print(f": ---------------- : ({idx}) Using {train_dataset.csv_file} : ---------------- :")
         output = __train_one(
-            train_dataset, criterion, batch_size, 
+            train_dataset, criterion, batch_size, lr,
             k_fold, num_epochs, accuracy_threshold, 
             patience, min_lr, grad_clip, factor, mode,
             **kwargs

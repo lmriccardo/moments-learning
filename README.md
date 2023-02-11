@@ -220,11 +220,9 @@ import os.path as opath
 import time
 
 # Changing the number of CV for the random search
-global fsml_config.RAND_SEARCH_NUM_CROSS_VALIDATION
 fsml_config.RAND_SEARCH_NUM_CROSS_VALIDATION = 5
 
 # Changing the Random Search Boostrap possibilities to [True]
-global fsml_config.RAND_SEARCH_BOOSTRAP
 fsml_config.RAND_SEARCH_BOOSTRAP = [True]
 
 # We can do this for all possibile configurations ... 
