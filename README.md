@@ -81,7 +81,7 @@ It is possible to use the project module in two different ways. Before proceedin
 
 First way, using the command line. To transform and simulate it is possible to take the availability of the `fsml.simulate` module using the following command `python -m fsml.simulate --help` and obtaining the following output.
 
-```bash
+```
 usage: __main__.py [-h] -m MODEL [-s SIMS] [-l LOG] [-o OUTPUT] [-d DATA] [-p TEST]
 
 options:
@@ -96,3 +96,44 @@ options:
   -p TEST, --test TEST  The relative or absolute path to the test folder (default: ./tests/)
 ```
 
+An example could be
+
+```
+$ python -m fsml.simulate -m 1 -s 1000
+```
+
+In this case the BioModel [BIOMD0000000001](https://www.ebi.ac.uk/biomodels/BIOMD0000000001) (or Edelstein1996 - EPSP ACh event) would be simulated 1000 times (each time with different parameters). The result of the simulation would be a CSV file stored in the `DATA` folder under the inner folder `meanstd`. The SBML model would be saved into the `TEST` folder, while all the parameters and the initial values for the species inside the `LOG` folder. Finally, the `OUTPUT` folder is just a tmp folder where the files containing the report produced by COPASI are stored. 
+
+### 2. Python Module Usage
+
+Second way, from the PIE (Python Interactive Environment) or a Python Script. This is an example to download, transform and simulate a single model multiple times.
+
+```python
+from fsml.simulate.main import transform_and_simulate_one
+import fsml.utils as utils
+import os.path as opath
+import os
+
+# Define the output folders
+log_dir = opath.join(os.getcwd(), "log/")
+output_dir = opath.join(os.getcwd(), "runs/")
+data_dir = opath.join(os.getcwd(), "data/")
+test_dir = opath.join(os.getcwd(), "tests/")
+
+# Define the model ID and the number of simulations
+model_id = 1
+number_of_simulations = 1000
+
+# Setup the seed
+utils.setup_seed()
+
+# Run the procedure
+transform_and_simulate_one(prefix_path=test_dir,
+                           log_dir=log_dir,
+                           output_dir=output_dir,
+                           data_dir=data_dir,
+                           model_id=model_id,
+                           nsim=number_of_simulations,
+                           job_id=0,
+                           gen_do=False)
+```
