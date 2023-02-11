@@ -233,7 +233,23 @@ values is composed by the mean and the standard deviations.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="fsml.learn.data_mangement.dataset.get_dataset_by_indices">
 <span class="sig-prename descclassname"><span class="pre">fsml.learn.data_mangement.dataset.</span></span><span class="sig-name descname"><span class="pre">get_dataset_by_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><span class="pre">FSMLOneMeanStdDataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><span class="pre">FSMLOneMeanStdDataset</span></a></span></span><a class="headerlink" href="#fsml.learn.data_mangement.dataset.get_dataset_by_indices" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>From an input already existing <a class="reference internal" href="#fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset" title="fsml.learn.data_mangement.dataset.FSMLOneMeanStdDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FSMLOneMeanStdDataset</span></code></a> create
+a new dataset of the same type, by copying it, but selecting
+only a portion of the train and test set. This portion is identified
+by the input train indexes and test indexes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src_dataset</strong> – The input already existing dataset</p></li>
+<li><p><strong>train_ids</strong> – The indexes for the new train set</p></li>
+<li><p><strong>test_ids</strong> – The indexes for the new test set</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a new dataset with “filtered” train and test set</p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 <section id="module-fsml.learn.data_mangement">
