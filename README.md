@@ -41,3 +41,34 @@ In this part I'm going to describe the most importan files in the project.
 ├── LICENSE.md                 # The license
 └── report.pdf                 # The PDF report
 ```
+
+## Installation and Requirements
+
+There is no kind of procedure for installing the project. Just clone the repo using the usual
+
+```
+git clone https://github.com/lmriccardo/moments-learning.git
+```
+
+command, and then add the root folder of the FSML package to the PYTHONPATH environment variable. Until now, there is no PiPy way available to install the module. Finally, to be able to import or runs the project you will need to install these Python packages:
+
+- **PyTorch**, for modeling the NN, the dataset and the dataloader
+- **Basico**, to use COPASI simulations and dowload the models
+- **LibSBML**, to modify the SBML
+- **Numpy**, Array math utilities
+- **Matplotlib**, to plot some useful graphs
+- **Pandas**, handle CSV files
+- **Scikit-Learn**, for modeling, train and test Random Forests
+
+All the packages are contained in the `requirements.txt` file in the root folder of the project. Then, just create a new environment and finally install those requirements.
+
+```bash
+# Classic Python way
+$ python -m venv venv && source venv/bin/activate
+$ pip install -r requirements.txt
+
+# Using Conda
+$ conda create -n venv python=3.10.8
+$ conda activate venv
+$ pip install -r requirements.txt
+```
