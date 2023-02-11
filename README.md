@@ -104,6 +104,38 @@ $ python -m fsml.simulate -m 1 -s 1000
 
 In this case the BioModel [BIOMD0000000001](https://www.ebi.ac.uk/biomodels/BIOMD0000000001) (or Edelstein1996 - EPSP ACh event) would be simulated 1000 times (each time with different parameters). The result of the simulation would be a CSV file stored in the `DATA` folder under the inner folder `meanstd`. The SBML model would be saved into the `TEST` folder, while all the parameters and the initial values for the species inside the `LOG` folder. Finally, the `OUTPUT` folder is just a tmp folder where the files containing the report produced by COPASI are stored. 
 
+The second stage of the project is actually learn the relationship, i.e., train and test the neural network both for the original and the inverse problem. To do this, it is possible to use the `fsml.learn` module. Given the classic help command `python -m fsml.learn --help` this is the output
+
+```
+usage: __main__.py [-h] -d DATA [-r] [--batches BATCHES] [--lr LR] [--epochs EPOCHS] [--cv CV] 
+                   [--acc-threshold ACC_THRESHOLD] [--grid-search] [--random-search]
+
+options:
+  -h, --help            show this help message and exit
+  -d DATA, --data DATA  The path to the CSV file or a Data Folder with multiple CSVs (default: None)
+  -r, --reverse         True, train the RF for the inverse problem. False otherwise (default: False)
+  --batches BATCHES     The number of batches (only for original problem) (default: 32)
+  --lr LR               The learning rate (only for original problem) (default: 0.0001)
+  --epochs EPOCHS       The total number of epochs (only for original problem) (default: 250)
+  --cv CV               The total number of cross validation (default: 3)
+  --acc-threshold ACC_THRESHOLD
+                        The accuracy threshold (only for original problem) (default: 2.0)
+  --grid-search         Turn the Grid Search for Random Forest to True (inverse problem) (default: False)
+  --random-search       Turn the Random Search for Random Forest to True (inverse problem) (default: False)
+```
+
+Note that some options only affect the original or inverse problem, while some others both like the number of cross validations. An example of running the learning process for the original problem could be
+
+```
+$ python -m fsml.learn -d ./data/ --batches 32 --lr 0.001 --epochs 100 --cv 0
+```
+
+In this example the command will run the learning procedure (train + test) for all the dataset inside the `./data` folder (note that all the dataset must be CSV files as described in the report), using 32 batches in the dataloader, an initial learning rate of 0.001, running for 100 epochs and finally without using any kind of Cross Validation. Whenever the `--reverse` flag is active then the inverse problem will be solved. Here is an example.
+
+```
+$ python -m fsml.learn -d ./data/ --reverse --grid-search --cv 3
+```
+
 ### 2. Python Module Usage
 
 Second way, from the PIE (Python Interactive Environment) or a Python Script. This is an example to download, transform and simulate a single model multiple times.

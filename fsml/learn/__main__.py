@@ -5,9 +5,10 @@ from fsml.utils import count_folder_elements
 import os
 import fsml.learn.config as config
 import time
+import argparse
 
 
-def main() -> None:
+def learn() -> None:
     file = os.path.join(os.getcwd(), "data/meanstd/")
     kwargs = {
         "num_hidden_input"  :config.MLP_NUM_HIDDEN_INPUT,
@@ -20,7 +21,7 @@ def main() -> None:
     _ = test(outputs, **kwargs)
 
 
-def main_reverse() -> None:
+def learn_reverse() -> None:
     # condition = lambda x: x.endswith('.csv')
     # _, files = count_folder_elements(config.DATA_PATH, condition)
     
@@ -39,5 +40,48 @@ def main_reverse() -> None:
         print(f"[*] Process ended in {final_time:0.3f} seconds")
 
 
-#main()
-main_reverse()
+def main() -> None:
+    argument_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    argument_parser.add_argument('-d', '--data',
+                                 help="The path to the CSV file or a Data Folder with multiple CSVs",
+                                 required=True,
+                                 type=str)
+    argument_parser.add_argument('-r', "--reverse",
+                                 help="True, train the RF for the inverse problem. False otherwise",
+                                 required=False,
+                                 action="store_true")
+    argument_parser.add_argument("--batches",
+                                 help="The number of batches (only for original problem)",
+                                 required=False,
+                                 default=config.BATCH_SIZE)
+    argument_parser.add_argument("--lr",
+                                 help="The learning rate (only for original problem)",
+                                 required=False,
+                                 default=config.LR)
+    argument_parser.add_argument("--epochs",
+                                 help="The total number of epochs (only for original problem)",
+                                 required=False,
+                                 default=config.NUM_EPOCHS)
+    argument_parser.add_argument("--cv",
+                                 help="The total number of cross validation",
+                                 required=False,
+                                 default=config.KF_SPLIT)
+    argument_parser.add_argument("--acc-threshold",
+                                 help="The accuracy threshold (only for original problem)",
+                                 required=False,
+                                 default=config.ACCURACY_THRESHOLD)
+    argument_parser.add_argument("--grid-search",
+                                 help="Turn the Grid Search for Random Forest to True (inverse problem)",
+                                 required=False,
+                                 action="store_true")
+    argument_parser.add_argument("--random-search",
+                                 help="Turn the Random Search for Random Forest to True (inverse problem)",
+                                 required=False,
+                                 action="store_true")
+    
+    args = argument_parser.parse_args()
+
+    print(args.data)
+
+main()
