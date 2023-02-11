@@ -1,0 +1,6 @@
+[project]
+name = "fsml"
+authors = [
+    {name = "Riccardo La Marca", email = "riccardo.lamarca98@gmail.com"}
+]
+dynamic = ["version", "description"]
