@@ -1,3 +1,6 @@
+
+.. _FSML Simulate:
+
 fsml.simulate package
 =====================
 

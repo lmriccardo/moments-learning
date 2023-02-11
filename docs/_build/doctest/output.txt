@@ -1,0 +1,29 @@
+Results of doctest builder run on 2023-02-11 21:37:03
+=====================================================
+
+Document: fsml
+--------------
+**********************************************************************
+File "fsml.rst", line ?, in default
+Failed example:
+    get_ranges(67, 16)
+Exception raised:
+    Traceback (most recent call last):
+      File "C:\Users\ricca\miniconda3\envs\avis\lib\doctest.py", line 1350, in __run
+        exec(compile(example.source, filename, "single",
+      File "<doctest default[0]>", line 1, in <module>
+        get_ranges(67, 16)
+    NameError: name 'get_ranges' is not defined
+**********************************************************************
+1 items had failures:
+   1 of   1 in default
+1 tests in 1 items.
+0 passed and 1 failed.
+***Test Failed*** 1 failures.
+
+Doctest summary
+===============
+    1 test
+    1 failure in tests
+    0 failures in setup code
+    0 failures in cleanup code
