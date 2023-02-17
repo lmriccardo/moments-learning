@@ -9,8 +9,78 @@ The project is configured to do two main computation:
 Download and Simulate
 ---------------------
 
-The sub-package :ref:`FSML Simulate` contains all the utilities to
-download, transform and simulate a BioModels. 
+The :ref:`FSML Simulate` contains all the utilities to download, transform and simulate a biological model.
+These biological models are taken directly from the BioModels Database using a Python Package called **basico**.
+The goal of this module is to download a biomodel and then simulate it using COPASI multiple times, each with
+a different model's parameters configuration. In this way we obtain a number of different simulations, from
+which it is possible to compute the mean and the variance useful for the next step, i.e., learning. 
+
+Here is an example on how to use this package in a script
+
+.. code-block::
+   :caption: An example of Download and Simulate
+
+    from fsml.simulate.main import transform_and_simulate_one
+    import fsml.utils as utils
+    import os.path as opath
+    import os
+
+    # Define the output folders
+    log_dir = opath.join(os.getcwd(), "log/")
+    output_dir = opath.join(os.getcwd(), "runs/")
+    data_dir = opath.join(os.getcwd(), "data/")
+    test_dir = opath.join(os.getcwd(), "tests/")
+
+    # Define the model ID and the number of simulations
+    model_id = 1
+    number_of_simulations = 1000
+
+    # Setup the seed
+    utils.setup_seed()
+
+    # Run the procedure
+    transform_and_simulate_one(prefix_path=test_dir,
+                            log_dir=log_dir,
+                            output_dir=output_dir,
+                            data_dir=data_dir,
+                            model_id=model_id,
+                            nsim=number_of_simulations,
+                            job_id=0,
+                            gen_do=False)
+
+
+In this example, with few lines of code, we are able to simulate the BioModel BIOMD0000000001 (or Edelstein1996 - EPSP ACh event)
+for a number of 1000 times (each with different parameters). The result of the simulation would be a CSV file stored in the 
+*./data/meanstd* folder. The SBML model would be saved into the *./tests/* folder, while all the parameters and the initial values
+for the species inside the *./log* folder. Finally, the *./runs* folder is just a temporary directory where the files containing
+the report produced by COPASI are stored. If you want also to save all the dense outputs (the trajectory of all the simulations)
+just give set the parameter *gen_do* of the *transform_and_simulate_one* function to *True*. 
+
+In this example I have shown how to simply download, transform and simulate one single model. Of course, it can be done with
+as many models you wants. This is another simple example on how to do that.
+
+.. code-block::
+   :caption: Download, transform and simulate 10 models in a row
+
+    # Define how many models
+    n_models = 10
+
+    # Define the number of simulations
+    number_of_simulations = 1000
+
+    # Setup the seed
+    utils.setup_seed()
+
+    for model_id in range(1, n_models + 1):
+        # Run the procedure
+        transform_and_simulate_one(prefix_path=test_dir,
+                                log_dir=log_dir,
+                                output_dir=output_dir,
+                                data_dir=data_dir,
+                                model_id=model_id,
+                                nsim=number_of_simulations,
+                                job_id=0,
+                                gen_do=False)
 
 Learning
 --------

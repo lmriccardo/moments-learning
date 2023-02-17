@@ -4,11 +4,11 @@ import torch.optim as optim
 from torch.nn.modules.loss import _Loss, _WeightedLoss
 
 import fsml.utils as utils
-from fsml.learn.data_mangement.dataset import FSMLOneMeanStdDataset,  \
+from fsml.learn.data_management.dataset import FSMLOneMeanStdDataset,  \
                                               get_dataset_by_indices, \
                                               FSMLMeanStdDataset
 
-from fsml.learn.data_mangement.dataloader import FSMLDataLoader
+from fsml.learn.data_management.dataloader import FSMLDataLoader
 from sklearn.model_selection import KFold
 import fsml.learn.models.mlp as mlp
 import matplotlib.pyplot as plt

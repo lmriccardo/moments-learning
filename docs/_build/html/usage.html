@@ -85,8 +85,76 @@
 </ul>
 <section id="download-and-simulate">
 <h2>Download and Simulate<a class="headerlink" href="#download-and-simulate" title="Permalink to this heading"></a></h2>
-<p>The sub-package <a class="reference internal" href="fsml.simulate.html#fsml-simulate"><span class="std std-ref">fsml.simulate package</span></a> contains all the utilities to
-download, transform and simulate a BioModels.</p>
+<p>The <a class="reference internal" href="fsml.simulate.html#fsml-simulate"><span class="std std-ref">fsml.simulate package</span></a> contains all the utilities to download, transform and simulate a biological model.
+These biological models are taken directly from the BioModels Database using a Python Package called <strong>basico</strong>.
+The goal of this module is to download a biomodel and then simulate it using COPASI multiple times, each with
+a different model’s parameters configuration. In this way we obtain a number of different simulations, from
+which it is possible to compute the mean and the variance useful for the next step, i.e., learning.</p>
+<p>Here is an example on how to use this package in a script</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">An example of Download and Simulate</span><a class="headerlink" href="#id1" title="Permalink to this code"></a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span> <span class="nn">fsml.simulate.main</span> <span class="kn">import</span> <span class="n">transform_and_simulate_one</span>
+ <span class="kn">import</span> <span class="nn">fsml.utils</span> <span class="k">as</span> <span class="nn">utils</span>
+ <span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">opath</span>
+ <span class="kn">import</span> <span class="nn">os</span>
+
+ <span class="c1"># Define the output folders</span>
+ <span class="n">log_dir</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;log/&quot;</span><span class="p">)</span>
+ <span class="n">output_dir</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;runs/&quot;</span><span class="p">)</span>
+ <span class="n">data_dir</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;data/&quot;</span><span class="p">)</span>
+ <span class="n">test_dir</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;tests/&quot;</span><span class="p">)</span>
+
+ <span class="c1"># Define the model ID and the number of simulations</span>
+ <span class="n">model_id</span> <span class="o">=</span> <span class="mi">1</span>
+ <span class="n">number_of_simulations</span> <span class="o">=</span> <span class="mi">1000</span>
+
+ <span class="c1"># Setup the seed</span>
+ <span class="n">utils</span><span class="o">.</span><span class="n">setup_seed</span><span class="p">()</span>
+
+ <span class="c1"># Run the procedure</span>
+ <span class="n">transform_and_simulate_one</span><span class="p">(</span><span class="n">prefix_path</span><span class="o">=</span><span class="n">test_dir</span><span class="p">,</span>
+                         <span class="n">log_dir</span><span class="o">=</span><span class="n">log_dir</span><span class="p">,</span>
+                         <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                         <span class="n">data_dir</span><span class="o">=</span><span class="n">data_dir</span><span class="p">,</span>
+                         <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+                         <span class="n">nsim</span><span class="o">=</span><span class="n">number_of_simulations</span><span class="p">,</span>
+                         <span class="n">job_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                         <span class="n">gen_do</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>In this example, with few lines of code, we are able to simulate the BioModel BIOMD0000000001 (or Edelstein1996 - EPSP ACh event)
+for a number of 1000 times (each with different parameters). The result of the simulation would be a CSV file stored in the
+<em>./data/meanstd</em> folder. The SBML model would be saved into the <em>./tests/</em> folder, while all the parameters and the initial values
+for the species inside the <em>./log</em> folder. Finally, the <em>./runs</em> folder is just a temporary directory where the files containing
+the report produced by COPASI are stored. If you want also to save all the dense outputs (the trajectory of all the simulations)
+just give set the parameter <em>gen_do</em> of the <em>transform_and_simulate_one</em> function to <em>True</em>.</p>
+<p>In this example I have shown how to simply download, transform and simulate one single model. Of course, it can be done with
+as many models you wants. This is another simple example on how to do that.</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Download, transform and simulate 10 models in a row</span><a class="headerlink" href="#id2" title="Permalink to this code"></a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Define how many models</span>
+ <span class="n">n_models</span> <span class="o">=</span> <span class="mi">10</span>
+
+ <span class="c1"># Define the number of simulations</span>
+ <span class="n">number_of_simulations</span> <span class="o">=</span> <span class="mi">1000</span>
+
+ <span class="c1"># Setup the seed</span>
+ <span class="n">utils</span><span class="o">.</span><span class="n">setup_seed</span><span class="p">()</span>
+
+ <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_models</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+     <span class="c1"># Run the procedure</span>
+     <span class="n">transform_and_simulate_one</span><span class="p">(</span><span class="n">prefix_path</span><span class="o">=</span><span class="n">test_dir</span><span class="p">,</span>
+                             <span class="n">log_dir</span><span class="o">=</span><span class="n">log_dir</span><span class="p">,</span>
+                             <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                             <span class="n">data_dir</span><span class="o">=</span><span class="n">data_dir</span><span class="p">,</span>
+                             <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+                             <span class="n">nsim</span><span class="o">=</span><span class="n">number_of_simulations</span><span class="p">,</span>
+                             <span class="n">job_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                             <span class="n">gen_do</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 </section>
 <section id="learning">
 <h2>Learning<a class="headerlink" href="#learning" title="Permalink to this heading"></a></h2>

@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 
-from fsml.learn.data_mangement.dataset import FSMLMeanStdDataset, FSMLOneMeanStdDataset
+from fsml.learn.data_management.dataset import FSMLMeanStdDataset, FSMLOneMeanStdDataset
 from typing import Optional, List, Generic, Tuple, Iterator
 
 from . import T
