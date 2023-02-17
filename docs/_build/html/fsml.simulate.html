@@ -96,12 +96,46 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="fsml.simulate.main.transform_and_simulate">
 <span class="sig-prename descclassname"><span class="pre">fsml.simulate.main.</span></span><span class="sig-name descname"><span class="pre">transform_and_simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fsml.simulate.main.transform_and_simulate" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Download, transform and simulate a bunch of model in a multiprocessing way.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – A Python Dictionary that must contains the following fields:
+- prefix_path, with the path of the test folder
+- nmodels, the number of models to download, transform and simulate
+- paths_file, the path to the file where to store the final paths
+- log_dir, with the path of the log folder
+- output_dir, with the path of the output folder
+- data_dir, with the path of the data folder
+- nsim_per_model, the number of simulations to run for each model
+- gen_do, boolean True generate also the dense output</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fsml.simulate.main.transform_and_simulate_one">
 <span class="sig-prename descclassname"><span class="pre">fsml.simulate.main.</span></span><span class="sig-name descname"><span class="pre">transform_and_simulate_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#fsml.simulate.main.transform_and_simulate_one" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Given a kind of configuration, it download, transforms and simulate a biomodel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – A Python Dictionary that must contains the following fields:
+- prefix_path, with the path of the test folder
+- model_id, with the ID of the model to simulate
+- log_dir, with the path of the log folder
+- output_dir, with the path of the output folder
+- data_dir, with the path of the data folder
+- job_id, not important left to 0
+- nsim, the number of simulations
+- gen_do, boolean True generate also the dense output</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the path of the model stored in the test folder</p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 <section id="module-fsml.simulate.simulate">
@@ -129,13 +163,6 @@ the <a href="#id1"><span class="problematic" id="id2">`</span></a>perc`% of the 
 <dt>params<span class="classifier">np.ndarray</span></dt><dd><p>The vector with all the parameters</p>
 </dd>
 <dt>conf<span class="classifier">ParameterSamplerConfiguration</span></dt><dd><p>The configuration for the sampler</p>
-</dd>
-</dl>
-</section>
-<section id="methods">
-<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this heading"></a></h3>
-<dl class="simple">
-<dt>generate(self) -&gt; Generator[np.ndarray, None, None]</dt><dd><p>Generate the actual sampling</p>
 </dd>
 </dl>
 <dl class="py method">
@@ -307,23 +334,6 @@ is done, the user can run the simulation and store the result in appropriate fol
 such that each row is a simulation and the first N
 columns are the parameters while the last M columns
 are the mean and the standard deviation of the outputs</p>
-</dd>
-</dl>
-</section>
-<section id="id5">
-<h3>Methods<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h3>
-<dl class="simple">
-<dt>get_model(self) -&gt; co.CModel:</dt><dd><p>Return the model handler of the current datamodel</p>
-</dd>
-<dt>def load_model(self) -&gt; None:</dt><dd><p>Load a new model from file</p>
-</dd>
-<dt>print_informations(self) -&gt; None</dt><dd><p>Print all the useful information about the input model</p>
-</dd>
-<dt>setup_task(self, conf: TaskConfiguration) -&gt; None</dt><dd><p>Setup different options for the trajectory task.</p>
-</dd>
-<dt>run_task(self) -&gt; bool</dt><dd><p>Run the trajectory task and return True if Ok, False otherwise</p>
-</dd>
-<dt>print_result(self) -&gt; None</dt><dd><p>Print the result of the simulation to the output file</p>
 </dd>
 </dl>
 <dl class="py method">

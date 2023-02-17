@@ -273,11 +273,6 @@ class ParameterSampler:
         The vector with all the parameters
     conf : ParameterSamplerConfiguration
         The configuration for the sampler
-
-    Methods
-    -------
-    generate(self) -> Generator[np.ndarray, None, None]
-        Generate the actual sampling
     """
     def __init__(self, params: List[float], param_conf: ParameterSamplerConfiguration) -> None:
         """ Just the constructor """
@@ -380,26 +375,6 @@ class TrajectoryTask:
         such that each row is a simulation and the first N
         columns are the parameters while the last M columns
         are the mean and the standard deviation of the outputs
-
-    Methods
-    -------
-    get_model(self) -> co.CModel:
-        Return the model handler of the current datamodel
-
-    def load_model(self) -> None:
-        Load a new model from file
-    
-    print_informations(self) -> None
-        Print all the useful information about the input model
-
-    setup_task(self, conf: TaskConfiguration) -> None
-        Setup different options for the trajectory task.
-    
-    run_task(self) -> bool
-        Run the trajectory task and return True if Ok, False otherwise
-
-    print_result(self) -> None
-        Print the result of the simulation to the output file
     """
 
     def __init__(self, model_file : str,                          # A handle to the data model

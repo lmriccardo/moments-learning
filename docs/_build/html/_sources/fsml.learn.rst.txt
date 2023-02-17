@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   fsml.learn.data_mangement
+   fsml.learn.data_management
    fsml.learn.models
 
 Submodules

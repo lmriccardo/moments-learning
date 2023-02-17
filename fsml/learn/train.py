@@ -116,6 +116,7 @@ class KFoldCrossValidationWrapper:
 
 
 class Trainer:
+    r""" Just a class for training """
     def __init__(self, train_dataset      : FSMLOneMeanStdDataset,              # The input train dataset
                        train_dataloader   : FSMLDataLoader,                     # The input train dataloader
                        optimizer          : optim.Optimizer,                    # The optimizer to use

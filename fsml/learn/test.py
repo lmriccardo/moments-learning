@@ -8,6 +8,7 @@ from typing import List, Tuple
 
 
 class Tester:
+    r""" Just a class for testing """
     def __init__(self, model_path         : str,             # The path of the model
                        test_dataloader    : FSMLDataLoader,  # The dataloader for testing
                        **kwargs

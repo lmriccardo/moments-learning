@@ -127,13 +127,17 @@ which it is possible to compute the mean and the variance useful for the next st
 for a number of 1000 times (each with different parameters). The result of the simulation would be a CSV file stored in the
 <em>./data/meanstd</em> folder. The SBML model would be saved into the <em>./tests/</em> folder, while all the parameters and the initial values
 for the species inside the <em>./log</em> folder. Finally, the <em>./runs</em> folder is just a temporary directory where the files containing
-the report produced by COPASI are stored. If you want also to save all the dense outputs (the trajectory of all the simulations)
-just give set the parameter <em>gen_do</em> of the <em>transform_and_simulate_one</em> function to <em>True</em>.</p>
+the report produced by COPASI are stored.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want also to save all the dense outputs (the trajectory of all the simulations)
+just set the parameter <em>gen_do</em> of the <em>transform_and_simulate_one</em> function to <em>True</em>.</p>
+</div>
 <p>In this example I have shown how to simply download, transform and simulate one single model. Of course, it can be done with
 as many models you wants. This is another simple example on how to do that.</p>
 <div class="literal-block-wrapper docutils container" id="id2">
 <div class="code-block-caption"><span class="caption-text">Download, transform and simulate 10 models in a row</span><a class="headerlink" href="#id2" title="Permalink to this code"></a></div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Define how many models</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Define how many models</span>
  <span class="n">n_models</span> <span class="o">=</span> <span class="mi">10</span>
 
  <span class="c1"># Define the number of simulations</span>
@@ -155,6 +159,8 @@ as many models you wants. This is another simple example on how to do that.</p>
 </pre></div>
 </div>
 </div>
+<p>There is another way to do that (<strong>however it is not suggested</strong>). In the same package there is a function
+<a class="reference internal" href="fsml.simulate.html#fsml.simulate.main.transform_and_simulate" title="fsml.simulate.main.transform_and_simulate"><code class="xref py py-func docutils literal notranslate"><span class="pre">fsml.simulate.main.transform_and_simulate()</span></code></a></p>
 </section>
 <section id="learning">
 <h2>Learning<a class="headerlink" href="#learning" title="Permalink to this heading"></a></h2>

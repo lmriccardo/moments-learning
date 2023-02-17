@@ -200,11 +200,6 @@ class FSMLMeanStdDataset(Dataset):
         The total amount of test data
     is_train : bool
         True then use the training data, False use test data
-
-    Methods
-    -------
-    test(self) -> None
-        Set the dataset for testing instead of training
     """
     def __init__(self, data_path: str, mixup: bool=False, train: float=0.8, test: float=0.2) -> None:
         """

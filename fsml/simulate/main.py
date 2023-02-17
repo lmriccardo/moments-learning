@@ -4,7 +4,6 @@ from multiprocessing import Pool
 import fsml.utils as utils
 from typing import Dict
 import time
-import os
 
 
 # -----------------------------------------------------------------------------
@@ -12,6 +11,21 @@ import os
 # -----------------------------------------------------------------------------
 
 def transform_and_simulate_one(kwargs: Dict[str, any]) -> str:
+    """
+    Given a kind of configuration, it download, transforms and simulate a biomodel.
+
+    :param kwargs: A Python Dictionary that must contains the following fields:
+                   - prefix_path, with the path of the test folder
+                   - model_id, with the ID of the model to simulate
+                   - log_dir, with the path of the log folder
+                   - output_dir, with the path of the output folder
+                   - data_dir, with the path of the data folder
+                   - job_id, not important left to 0
+                   - nsim, the number of simulations
+                   - gen_do, boolean True generate also the dense output
+
+    :return: the path of the model stored in the test folder
+    """
     # Parameters for transformation
     prefix_path = kwargs["prefix_path"]
     model_id    = kwargs["model_id"]
@@ -34,6 +48,21 @@ def transform_and_simulate_one(kwargs: Dict[str, any]) -> str:
 
 
 def transform_and_simulate(**kwargs: Dict[str, any]) -> None:
+    """
+    Download, transform and simulate a bunch of model in a multiprocessing way.
+
+    :param kwargs: A Python Dictionary that must contains the following fields:
+                   - prefix_path, with the path of the test folder
+                   - nmodels, the number of models to download, transform and simulate
+                   - paths_file, the path to the file where to store the final paths
+                   - log_dir, with the path of the log folder
+                   - output_dir, with the path of the output folder
+                   - data_dir, with the path of the data folder
+                   - nsim_per_model, the number of simulations to run for each model
+                   - gen_do, boolean True generate also the dense output
+    
+    :return:
+    """
     # Parameters for transformation
     prefix_path = kwargs["prefix_path"]
     nmodels     = kwargs["nmodels"]
